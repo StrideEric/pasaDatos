@@ -1,6 +1,6 @@
 /**
  * =========================================================================
- * pasaDatos - CONTRATO OFICIAL DE PARÁMETROS URL (ZERO-DB)
+ * pasaDatos - CONTRATO OFICIAL DE PARÁMETROS URL
  * Impulsado por prolijo.ar
  * =========================================================================
  * REGLA DE RETROCOMPATIBILIDAD PERPETUA:
@@ -51,7 +51,7 @@ const DEFAULT_STATE = {
   u: '20-38495821-3',
   b: 'Mercado Pago',
   w: '1134859201',
-  p: '10% OFF abonando por transferencia inmediata',
+  p: '',
   th: 'blue'
 };
 
@@ -489,6 +489,11 @@ function populateFormFields() {
   setVal('input-banco', appState.b);
   setVal('input-whatsapp', appState.w);
   setVal('input-promo', appState.p);
+  if (appState.p && appState.p.trim().length > 0) {
+    updatePromoModeUI('calc');
+  } else {
+    updatePromoModeUI('simple');
+  }
 
   // Sincronizar colores en controles
   const colorPicker = document.getElementById('input-theme-color-picker');
@@ -979,9 +984,8 @@ function printPoster(format = selectedPrintFormat) {
     dynamicStyle.id = 'dynamic-print-page-style';
     document.head.appendChild(dynamicStyle);
   }
-  const pageSize = effectiveFormat === 'a5' ? 'A5 portrait' : 'A4 portrait';
-  const pageMargin = effectiveFormat === 'a5' ? '6mm' : '8mm';
-  dynamicStyle.textContent = `@page { size: ${pageSize}; margin: ${pageMargin}; }`;
+  const pageSize = effectiveFormat === 'a5' ? '148mm 210mm' : '210mm 297mm';
+  dynamicStyle.textContent = `@page { size: ${pageSize}; margin: 0 !important; }`;
 
   // Sincronizar el nodo de impresión clonado
   syncPrintStage(effectiveFormat);
@@ -1173,7 +1177,14 @@ function collectFormValues() {
   appState.u = formatCUIT(getVal('input-cuit'));
   appState.b = sanitizeInput(getVal('input-banco'), 40);
   appState.w = sanitizeInput(getVal('input-whatsapp'), 25);
-  appState.p = sanitizeInput(getVal('input-promo'), 120);
+
+  // Promo: Si el contenedor de promo está visible, tomar el valor; sino, vacío (Modo Simple)
+  const promoContainer = document.getElementById('promo-input-container');
+  if (promoContainer && !promoContainer.classList.contains('hidden')) {
+    appState.p = sanitizeInput(getVal('input-promo'), 120);
+  } else {
+    appState.p = '';
+  }
 
   // Tema visual: priorizar preset si tiene ring-4 activo; si no, color personalizado
   const activePreset = document.querySelector('.theme-option.ring-4');
@@ -1188,6 +1199,58 @@ function collectFormValues() {
       }
     }
   }
+}
+
+/**
+ * Actualiza la apariencia visual del selector de promo simple vs calculadora
+ */
+function updatePromoModeUI(mode) {
+  const btnSimple = document.getElementById('btn-promo-mode-simple');
+  const btnCalc = document.getElementById('btn-promo-mode-calc');
+  const container = document.getElementById('promo-input-container');
+
+  if (mode === 'simple') {
+    if (btnSimple) {
+      btnSimple.className = 'py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all bg-white text-slate-900 shadow-xs cursor-pointer';
+    }
+    if (btnCalc) {
+      btnCalc.className = 'py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+    }
+    if (container) container.classList.add('hidden');
+  } else {
+    if (btnCalc) {
+      btnCalc.className = 'py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all bg-white text-slate-900 shadow-xs cursor-pointer';
+    }
+    if (btnSimple) {
+      btnSimple.className = 'py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+    }
+    if (container) container.classList.remove('hidden');
+  }
+}
+
+/**
+ * Conmuta entre Modo Simple (sin promo ni calculadora) y Modo Descuento
+ */
+function setPromoMode(mode) {
+  updatePromoModeUI(mode);
+  const inputPromo = document.getElementById('input-promo');
+
+  if (mode === 'simple') {
+    if (inputPromo) inputPromo.value = '';
+    appState.p = '';
+  } else {
+    if (inputPromo) {
+      if (!inputPromo.value.trim()) {
+        inputPromo.value = '10% OFF pagando por transferencia';
+      }
+      appState.p = inputPromo.value.trim();
+      inputPromo.focus();
+    }
+  }
+
+  saveStateToStorage();
+  renderPosterPreview();
+  renderMobileMockupPreview();
 }
 
 /**
@@ -1276,6 +1339,36 @@ function bindInputEvents() {
   onInput('input-banco', 'b', (v) => sanitizeInput(v, 40));
   onInput('input-whatsapp', 'w', (v) => sanitizeInput(v, 25));
   onInput('input-promo', 'p', (v) => sanitizeInput(v, 120));
+
+  // Selector de Modalidad de Descuento (Simple vs Calculadora)
+  const btnPromoSimple = document.getElementById('btn-promo-mode-simple');
+  if (btnPromoSimple) {
+    btnPromoSimple.addEventListener('click', () => {
+      setPromoMode('simple');
+    });
+  }
+
+  const btnPromoCalc = document.getElementById('btn-promo-mode-calc');
+  if (btnPromoCalc) {
+    btnPromoCalc.addEventListener('click', () => {
+      setPromoMode('calc');
+    });
+  }
+
+  // Píldoras rápidas de descuento (10%, 15%, 20%)
+  document.querySelectorAll('.promo-quick-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      const promoText = pill.getAttribute('data-promo') || '';
+      const inputPromo = document.getElementById('input-promo');
+      if (inputPromo) {
+        inputPromo.value = promoText;
+        appState.p = promoText;
+        saveStateToStorage();
+        renderPosterPreview();
+        renderMobileMockupPreview();
+      }
+    });
+  });
 
   // Botón Principal de Actualizar Datos y Regenerar QR (con Rate Limit)
   const updateQrBtn = document.getElementById('btn-update-qr');

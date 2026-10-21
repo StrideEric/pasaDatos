@@ -317,7 +317,7 @@ body {
 /* ==========================================================================
    REGLAS ESTRICTAS DE IMPRESIÓN (@media print)
    Garantiza que al tocar Imprimir salga exclusivamente el cartel en A4 o A5
-   con colores de fondo exactos, sin márgenes residuales ni elementos web.
+   en ESTRICTAMENTE 1 SOLA HOJA, con colores de fondo exactos y sin desbordes.
    ========================================================================== */
 
 #print-stage {
@@ -325,12 +325,17 @@ body {
 }
 
 @media print {
+  @page {
+    margin: 0 !important;
+  }
+
   html, body {
     width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -342,52 +347,94 @@ body {
 
   /* Mostrar exclusivamente el contenedor de impresión */
   #print-stage {
-    display: block !important;
-    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
     margin: 0 auto !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
   }
 
   /* Formato A5 Mostrador (148 x 210 mm) */
   body.print-format-a5 #print-stage {
-    max-width: 136mm !important;
+    width: 148mm !important;
+    height: 210mm !important;
+    max-width: 148mm !important;
+    max-height: 210mm !important;
+    padding: 6mm !important;
   }
 
   body.print-format-a5 #print-stage .printable-poster-card {
-    max-width: 136mm !important;
     width: 100% !important;
-    min-height: 195mm !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 14px !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 198mm !important;
+    min-height: 0 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
     box-shadow: none !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    overflow: hidden !important;
   }
 
   /* Formato A4 Vidriera / Pared (210 x 297 mm) */
   body.print-format-a4 #print-stage {
-    max-width: 194mm !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    max-height: 297mm !important;
+    padding: 8mm !important;
   }
 
   body.print-format-a4 #print-stage .printable-poster-card {
-    max-width: 194mm !important;
     width: 100% !important;
-    min-height: 278mm !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 18px !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 281mm !important;
+    min-height: 0 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 16px !important;
     box-shadow: none !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    overflow: hidden !important;
   }
 
-  /* Asegurar que las imágenes y textos sean nítidos */
+  /* Ajustes proporcionales internos para ajuste perfecto en 1 página */
+  #print-stage .printable-poster-card > div:first-child {
+    padding: 16px 22px !important;
+  }
+
+  #print-stage .printable-poster-card > div:nth-child(2) {
+    padding: 14px 22px !important;
+    gap: 10px !important;
+  }
+
   #print-stage img {
+    max-width: 175px !important;
+    max-height: 175px !important;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+  }
+
+  #print-stage .printable-poster-card > div:last-child {
+    padding: 10px 22px !important;
   }
 }

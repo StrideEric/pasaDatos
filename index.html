@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pasaDatos — Cobro Digital Rápido por Transferencia | prolijo.ar</title>
   
-  <meta name="description" content="Generador gratuito de carteles QR para mostrador y links de cobro por transferencia bancaria en Argentina. Sin base de datos, ultrarrápido y sin agendar números. Impulsado por prolijo.ar">
+  <meta name="description" content="Generador gratuito de carteles QR para mostrador y links de cobro por transferencia bancaria en Argentina. Simple, ultrarrápido y sin agendar números. Impulsado por prolijo.ar">
   <meta name="keywords" content="cobro transferencia, alias cbu, alias cvu, cartel qr mostrador, mercadopago, prolijo.ar, argentina, pymes">
   
   <!-- Open Graph -->
   <meta property="og:title" content="pasaDatos — Cobro Digital Rápido por Transferencia">
-  <meta property="og:description" content="Creá tu cartel QR de mostrador y link de cobro sin base de datos. Evitá dictar el Alias y mandá comprobantes sin agendar.">
+  <meta property="og:description" content="Creá tu cartel QR de mostrador y link de cobro rápido. Evitá dictar el Alias y mandá comprobantes sin agendar.">
   <meta property="og:type" content="website">
 
   <!-- Favicon SVG con rayo de transferencia -->
@@ -64,38 +64,36 @@
     
     <!-- Barra Superior / Navbar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="#" class="brand-home-clean-link flex items-center space-x-3 group cursor-pointer" title="Ir al inicio limpio de pasaDatos">
-          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <i data-lucide="zap" class="w-5 h-5"></i>
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+        <!-- Marca pasaDatos -->
+        <a href="#" class="brand-home-clean-link flex items-center gap-2 sm:gap-3 group cursor-pointer min-w-0" title="Ir al inicio limpio de pasaDatos">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform flex-shrink-0">
+            <i data-lucide="zap" class="w-4 h-4 sm:w-5 sm:h-5"></i>
           </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <span class="text-xl font-extrabold tracking-tight text-slate-900 font-display">pasa<span class="text-blue-600">Datos</span></span>
-              <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded-full border border-slate-200">v2.0 Zero-DB</span>
-            </div>
-            <p class="text-xs text-slate-500">
-              un producto libre de 
-              <span class="font-bold text-slate-800 hover:text-blue-600 transition-colors inline-flex items-center gap-0.5">
-                prolijo.ar
-              </span>
-            </p>
+          <div class="min-w-0">
+            <span class="text-base sm:text-xl font-black tracking-tight text-slate-900 font-display block leading-none">
+              pasa<span class="text-blue-600">Datos</span>
+            </span>
+            <span class="text-[10px] sm:text-xs text-slate-500 font-medium block mt-0.5 truncate">
+              por <strong class="text-slate-700 font-bold">prolijo.ar</strong>
+            </span>
           </div>
         </a>
 
         <!-- Badges y Acciones Rápidas -->
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <button id="btn-reset-demo" type="button" class="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="Restaurar datos de ejemplo">
-            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 mr-1.5"></i>
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button id="btn-reset-demo" type="button" class="hidden md:inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer" title="Restaurar datos de ejemplo">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 mr-1"></i>
             Ejemplo
           </button>
-          <button id="btn-clear-form" type="button" class="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Vaciar formulario">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1.5"></i>
+          <button id="btn-clear-form" type="button" class="hidden md:inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Vaciar formulario">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1"></i>
             Limpiar
           </button>
-          <button id="btn-preview-client-mode" type="button" class="inline-flex items-center px-3.5 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all shadow-xs">
-            <i data-lucide="smartphone" class="w-4 h-4 mr-1.5"></i>
-            Probar como Cliente
+          <button id="btn-preview-client-mode" type="button" class="inline-flex items-center px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 active:scale-95 border border-blue-200 rounded-xl transition-all shadow-xs whitespace-nowrap cursor-pointer">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 text-blue-600 flex-shrink-0"></i>
+            <span class="hidden sm:inline">Probar como Cliente</span>
+            <span class="sm:hidden">Ver Cliente</span>
           </button>
         </div>
       </div>
@@ -107,7 +105,7 @@
         <div>
           <div class="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full mb-2 border border-blue-200/50">
             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-            100% Privado — Cero Base de Datos — Toda la info viaja en tu Link y QR
+            100% Privado y Seguro — Toda la información viaja directamente en tu Link y QR
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display">
             Cartel QR de mostrador y cobro digital sin complicaciones
@@ -306,17 +304,49 @@
                 <div id="whatsapp-preview-hint" class="text-xs text-slate-400 mt-1"></div>
               </div>
 
-              <!-- Promo o Mensaje Destacado -->
-              <div>
-                <label for="input-promo" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Mensaje o Promo Destacada <span class="text-slate-400 font-normal">(Opcional)</span>
-                </label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <!-- Selector: Modo Simple vs Descuento con Calculadora -->
+              <div class="space-y-3 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Descuento & Calculadora para el Cliente
+                  </label>
+                  <span class="text-[11px] text-slate-400 font-medium">Elegí tu opción</span>
+                </div>
+
+                <!-- Selector de Modalidad (Simple vs Con Descuento) -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl text-xs">
+                  <button type="button" id="btn-promo-mode-simple" class="py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all bg-white text-slate-900 shadow-xs cursor-pointer">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-slate-600"></i>
+                    <span>Modo Simple (Sin promo)</span>
+                  </button>
+                  <button type="button" id="btn-promo-mode-calc" class="py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                    <i data-lucide="calculator" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>Activar Descuento</span>
+                  </button>
+                </div>
+
+                <!-- Contenedor del campo de promo (visible solo si Activar Descuento está activo) -->
+                <div id="promo-input-container" class="hidden space-y-2 pt-1 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold text-slate-600">Mensaje o porcentaje de descuento:</span>
+                    <!-- Píldoras rápidas de descuento -->
+                    <div class="flex items-center gap-1">
+                      <button type="button" class="promo-quick-pill px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer" data-promo="10% OFF pagando por transferencia">10% OFF</button>
+                      <button type="button" class="promo-quick-pill px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer" data-promo="15% OFF pagando por transferencia">15% OFF</button>
+                      <button type="button" class="promo-quick-pill px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer" data-promo="20% OFF pagando por transferencia">20% OFF</button>
+                    </div>
                   </div>
-                  <input type="text" id="input-promo" placeholder="Ej: 10% OFF abonando por transferencia o Pedí Factura A o B"
-                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                    </div>
+                    <input type="text" id="input-promo" placeholder="Ej: 10% OFF pagando por transferencia o Pedí Factura A o B"
+                      class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                  </div>
+                  <p class="text-[11px] text-slate-400">
+                    Al ingresar un porcentaje como <strong>10% OFF</strong>, el cliente podrá anotar el monto del ticket y calcular el total con descuento al transferirte.
+                  </p>
                 </div>
               </div>
             </div>
@@ -840,9 +870,9 @@
   <!-- ====================================================================
        VISTA 2: MODO CLIENTE (Pantalla de Cobro Rápido al escanear QR / link)
        ==================================================================== -->
-  <div id="client-view" class="hidden flex-grow flex flex-col justify-between py-6 px-4 bg-slate-100 min-h-screen" data-theme="blue">
+  <div id="client-view" class="hidden flex-grow flex flex-col justify-between pt-6 bg-slate-100 min-h-screen" data-theme="blue">
     
-    <div class="w-full max-w-md mx-auto space-y-4">
+    <div class="w-full max-w-md mx-auto px-4 space-y-4 flex-grow">
       
       <!-- Header Superior Modo Cliente: Marca pasaDatos y Botón Crear el Mío Limpio -->
       <div class="flex items-center justify-between pb-1 px-1">
@@ -1051,23 +1081,28 @@
         </div>
       </div>
 
-      <!-- FOOTER DESACOPLADO MODO CLIENTE -->
-      <footer class="mt-8 pt-4 pb-8 border-t border-slate-200/80 text-center flex flex-col items-center gap-3">
-        <p class="text-xs text-slate-400">
-          © 2026 <strong>pasaDatos</strong> · Cero base de datos & 100% privado
-        </p>
-        <a
-          href="https://prolijo.ar/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="prolijo-credit prolijo-credit-light shadow-xs"
-        >
-          Desarrollado por <strong>prolijo.ar</strong>
-          <span class="arrow" aria-hidden="true">↗</span>
-        </a>
-      </footer>
-
     </div>
+
+    <!-- Footer General estilo Prolijo (Exactamente el mismo en ambas vistas) -->
+    <footer class="prolijo-footer mt-12 w-full">
+      <div class="max-w-md mx-auto px-4">
+        <div class="prolijo-footer-bottom">
+          <p>
+            © 2026 <strong>pasaDatos</strong>. Todos los derechos reservados.
+          </p>
+
+          <a
+            href="https://prolijo.ar/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="prolijo-credit"
+          >
+            Desarrollado por <strong>prolijo.ar</strong>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+    </footer>
 
   </div>
 
