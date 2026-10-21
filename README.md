@@ -2,6 +2,8 @@
 
 > **Herramienta gratuita de cobro rápido por transferencia en mostrador y WhatsApp.**
 > Diseñada como producto Trojan Horse / Lead Magnet para potenciar el ecosistema tecnológico de **[prolijo.ar](https://prolijo.ar)**.
+>
+> 🌐 **App en vivo (GitHub Pages):** [https://strideeric.github.io/pasaDatos/](https://strideeric.github.io/pasaDatos/)
 
 ---
 
