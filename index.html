@@ -362,6 +362,30 @@
             </div>
           </div>
 
+          <!-- Card 5: Botón de Actualizar Datos y Regenerar QR (Rate limit: 1 vez por minuto) -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+              <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-500/20">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 font-display">Actualizar Datos y Regenerar QR</h3>
+                <p class="text-xs text-slate-600 mt-0.5">
+                  Aplica tus cambios, recalcula el link de cobro y regenera el código QR.
+                </p>
+                <div id="update-qr-status" class="text-[11px] font-medium text-slate-500 mt-1 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                  <span>Permite actualizar hasta 1 vez por minuto</span>
+                </div>
+              </div>
+            </div>
+
+            <button id="btn-update-qr" type="button" class="w-full sm:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 disabled:active:scale-100 disabled:shadow-none flex-shrink-0 cursor-pointer">
+              <i id="btn-update-qr-icon" data-lucide="refresh-cw" class="w-4 h-4"></i>
+              <span id="btn-update-qr-text">Actualizar Datos y QR</span>
+            </button>
+          </div>
+
         </div>
 
         <!-- ============================================================
@@ -771,8 +795,8 @@
         </div>
       </div>
 
-      <!-- CALCULADORA RÁPIDA / ANOTADOR DE MONTO & PROMO -->
-      <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+      <!-- CALCULADORA RÁPIDA / ANOTADOR DE MONTO & PROMO (Solo visible si hay promo cargada) -->
+      <div id="client-promo-calc-section" class="hidden bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
         <!-- Promo banner si existe -->
         <div id="client-promo-banner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3 text-amber-900 text-xs font-bold flex items-center gap-2">
           <i data-lucide="sparkles" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>

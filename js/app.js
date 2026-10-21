@@ -8,7 +8,7 @@
  * mostradores de comercios en Argentina. NUNCA deben renombrarse, eliminarse
  * ni modificarse su semántica en futuros commits.
  *
- * Si algún parámetro falta en la URL, la interfaz debe degradarse con elegancia
+ * Si algún parámetro falta en la URL, la interfaz se degrada con elegancia
  * ocultando ese campo sin tirar errores en consola.
  *
  * DICCIONARIO OFICIAL:
@@ -26,7 +26,13 @@
  * =========================================================================
  */
 
-// Estado Global
+// Constantes de Seguridad y Temas
+const ALLOWED_THEMES = ['blue', 'emerald', 'violet', 'slate', 'orange'];
+const UPDATE_COOLDOWN_MS = 60000; // 60 segundos (1 minuto) de Rate Limit
+const STORAGE_CONFIG_KEY = 'pasadatos_config';
+const STORAGE_LAST_UPDATE_KEY = 'pasadatos_last_qr_update';
+
+// Estado Predeterminado de Ejemplo
 const DEFAULT_STATE = {
   n: 'Café & Deli Martínez',
   r: 'Cafetería de Especialidad & Pastelería',
@@ -43,20 +49,49 @@ const DEFAULT_STATE = {
 let appState = { ...DEFAULT_STATE };
 let isCreatorMode = true;
 let currentPreviewTab = 'poster'; // 'poster' o 'mobile'
+let updateCooldownTimer = null;
 
-// Lista de Billeteras y Bancos frecuentes en Argentina
-const POPULAR_BANKS = [
-  'Mercado Pago',
-  'Banco Galicia',
-  'Banco Nación',
-  'Santander',
-  'BBVA',
-  'Brubank',
-  'Ualá',
-  'Naranja X',
-  'Banco Macro',
-  'Banco Provincia'
-];
+// =========================================================================
+// FUNCIONES DE SEGURIDAD Y SANITIZACIÓN (PENTEST & DEFENSE-IN-DEPTH)
+// =========================================================================
+
+/**
+ * Valida y sanitiza el tema visual contra lista blanca permitida
+ */
+function sanitizeTheme(theme) {
+  if (typeof theme !== 'string') return 'blue';
+  const clean = theme.trim().toLowerCase();
+  return ALLOWED_THEMES.includes(clean) ? clean : 'blue';
+}
+
+/**
+ * Sanitiza cadenas de texto libre eliminando caracteres de control y limitando longitud
+ */
+function sanitizeInput(val, maxLength = 100) {
+  if (val === null || val === undefined) return '';
+  const str = String(val)
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Eliminar caracteres de control ASCII
+    .trim();
+  return str.slice(0, maxLength);
+}
+
+/**
+ * Limpia y normaliza el Alias (letras mayúsculas, números, puntos y guiones, máx 30 caracteres)
+ */
+function sanitizeAlias(value) {
+  if (!value) return '';
+  return String(value)
+    .toUpperCase()
+    .replace(/[^A-Z0-9.-]/g, '')
+    .slice(0, 30);
+}
+
+/**
+ * Valida que un número de WhatsApp normalizado tenga un formato seguro para wa.me
+ */
+function isValidWhatsApp(num) {
+  return typeof num === 'string' && /^549\d{8,12}$/.test(num);
+}
 
 /**
  * Normaliza número de teléfono de Argentina al formato internacional '549...'
@@ -64,19 +99,19 @@ const POPULAR_BANKS = [
  */
 function normalizeArgentinaWhatsApp(input) {
   if (!input) return '';
-  let digits = input.replace(/\D/g, '');
+  let digits = String(input).replace(/\D/g, '');
   if (!digits) return '';
 
-  if (digits.startsWith('549')) return digits;
+  if (digits.startsWith('549')) return digits.slice(0, 15);
   if (digits.startsWith('54')) {
     let rest = digits.slice(2);
     if (rest.startsWith('0')) rest = rest.slice(1);
-    if (rest.startsWith('9')) return '54' + rest;
-    return '549' + rest;
+    if (rest.startsWith('9')) return ('54' + rest).slice(0, 15);
+    return ('549' + rest).slice(0, 15);
   }
   if (digits.startsWith('0')) digits = digits.slice(1);
 
-  // Casos comunes de 15 insertado (CABA 11, o códigos de 3/4 dígitos)
+  // Casos comunes de 15 insertado en Argentina (CABA 11, o códigos de 3/4 dígitos)
   if (digits.startsWith('11') && digits.length >= 10 && digits.slice(2, 4) === '15') {
     digits = '11' + digits.slice(4);
   } else if (digits.length >= 11 && digits.slice(3, 5) === '15') {
@@ -87,7 +122,7 @@ function normalizeArgentinaWhatsApp(input) {
     digits = digits.slice(2);
   }
 
-  return '549' + digits;
+  return ('549' + digits).slice(0, 15);
 }
 
 /**
@@ -96,7 +131,6 @@ function normalizeArgentinaWhatsApp(input) {
 function formatWhatsAppDisplay(raw) {
   const norm = normalizeArgentinaWhatsApp(raw);
   if (!norm || norm.length < 11) return raw || '';
-  // norm = 549 + area + subscriber
   const withoutCountry = norm.slice(3); // e.g. 1134859201 o 3624000000
   if (withoutCountry.startsWith('11')) {
     return `+54 9 11 ${withoutCountry.slice(2, 6)}-${withoutCountry.slice(6)}`;
@@ -109,18 +143,10 @@ function formatWhatsAppDisplay(raw) {
  */
 function formatCUIT(value) {
   if (!value) return '';
-  const digits = value.replace(/\D/g, '').slice(0, 11);
+  const digits = String(value).replace(/\D/g, '').slice(0, 11);
   if (digits.length <= 2) return digits;
   if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
   return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10, 11)}`;
-}
-
-/**
- * Limpia y normaliza el Alias (letras mayúsculas, números, puntos y guiones)
- */
-function sanitizeAlias(value) {
-  if (!value) return '';
-  return value.toUpperCase().replace(/[^A-Z0-9.-]/g, '');
 }
 
 /**
@@ -131,44 +157,48 @@ function buildShareUrl(state) {
   const pathname = window.location.pathname;
   const params = new URLSearchParams();
 
-  if (state.n) params.set('n', state.n.trim());
-  if (state.r) params.set('r', state.r.trim());
-  if (state.a) params.set('a', sanitizeAlias(state.a));
+  if (state.n && state.n.trim()) params.set('n', state.n.trim().slice(0, 80));
+  if (state.r && state.r.trim()) params.set('r', state.r.trim().slice(0, 80));
+  if (state.a && state.a.trim()) params.set('a', sanitizeAlias(state.a));
   if (state.c) {
-    const cleanCbu = state.c.replace(/\D/g, '');
+    const cleanCbu = state.c.replace(/\D/g, '').slice(0, 22);
     if (cleanCbu) params.set('c', cleanCbu);
   }
-  if (state.t) params.set('t', state.t.trim());
+  if (state.t && state.t.trim()) params.set('t', state.t.trim().slice(0, 80));
   if (state.u) {
-    const cleanCuit = state.u.trim();
+    const cleanCuit = state.u.trim().slice(0, 13);
     if (cleanCuit) params.set('u', cleanCuit);
   }
-  if (state.b) params.set('b', state.b.trim());
+  if (state.b && state.b.trim()) params.set('b', state.b.trim().slice(0, 40));
   if (state.w) {
     const cleanWa = normalizeArgentinaWhatsApp(state.w);
     if (cleanWa) params.set('w', cleanWa);
   }
-  if (state.p) params.set('p', state.p.trim());
-  if (state.th && state.th !== 'blue') params.set('th', state.th);
+  if (state.p && state.p.trim()) params.set('p', state.p.trim().slice(0, 120));
+  if (state.th && state.th !== 'blue') params.set('th', sanitizeTheme(state.th));
 
   return `${origin}${pathname}?${params.toString()}`;
 }
 
 /**
- * Muestra un Toast estilizado en pantalla
+ * Muestra un Toast estilizado en pantalla de forma 100% segura contra XSS
  */
 function showToast(message, type = 'success', duration = 3000) {
   const container = document.getElementById('toast-container');
   if (!container) return;
 
   const toast = document.createElement('div');
-  toast.className = `toast-message toast-${type}`;
+  toast.className = `toast-message toast-${type === 'success' ? 'success' : 'info'}`;
   
-  const iconName = type === 'success' ? 'check-circle' : 'info';
-  toast.innerHTML = `
-    <i data-lucide="${iconName}" class="w-5 h-5 flex-shrink-0"></i>
-    <span>${message}</span>
-  `;
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide', type === 'success' ? 'check-circle' : 'info');
+  icon.className = 'w-5 h-5 flex-shrink-0';
+
+  const textSpan = document.createElement('span');
+  textSpan.textContent = String(message); // Previene inyección HTML
+
+  toast.appendChild(icon);
+  toast.appendChild(textSpan);
   container.appendChild(toast);
 
   if (window.lucide) window.lucide.createIcons();
@@ -193,7 +223,7 @@ async function copyToClipboard(text, successMessage = 'Copiado al portapapeles')
     try {
       navigator.vibrate(50);
     } catch (e) {
-      // Ignorar si el navegador bloquea vibración
+      // Ignorar si el navegador no permite vibración
     }
   }
 
@@ -243,7 +273,7 @@ function updateQRCode() {
   const qrDataUrl = generateQRDataURL(shareUrl, 600);
 
   const posterImg = document.getElementById('poster-qr-img');
-  if (posterImg) {
+  if (posterImg && qrDataUrl) {
     posterImg.src = qrDataUrl;
   }
 
@@ -259,13 +289,11 @@ function syncPrintStage() {
   const posterElem = document.getElementById('printable-poster');
   if (!printStage || !posterElem) return;
 
-  // Clonar el nodo del cartel para garantizar que tenga los mismos estilos y QR
   printStage.innerHTML = '';
   const clone = posterElem.cloneNode(true);
   clone.id = 'printable-poster-clone';
   printStage.appendChild(clone);
 
-  // Asegurar que Lucide reemplace los iconos dentro del clon
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -274,10 +302,21 @@ function syncPrintStage() {
  */
 function loadStateFromStorage() {
   try {
-    const saved = localStorage.getItem('pasadatos_config');
+    const saved = localStorage.getItem(STORAGE_CONFIG_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      appState = { ...DEFAULT_STATE, ...parsed };
+      appState = {
+        n: sanitizeInput(parsed.n || DEFAULT_STATE.n, 80),
+        r: sanitizeInput(parsed.r || DEFAULT_STATE.r, 80),
+        a: sanitizeAlias(parsed.a || DEFAULT_STATE.a),
+        c: String(parsed.c || DEFAULT_STATE.c).replace(/\D/g, '').slice(0, 22),
+        t: sanitizeInput(parsed.t || DEFAULT_STATE.t, 80),
+        u: formatCUIT(parsed.u || DEFAULT_STATE.u),
+        b: sanitizeInput(parsed.b || DEFAULT_STATE.b, 40),
+        w: sanitizeInput(parsed.w || DEFAULT_STATE.w, 25),
+        p: sanitizeInput(parsed.p || DEFAULT_STATE.p, 120),
+        th: sanitizeTheme(parsed.th || DEFAULT_STATE.th)
+      };
       return;
     }
   } catch (e) {
@@ -291,26 +330,26 @@ function loadStateFromStorage() {
  */
 function saveStateToStorage() {
   try {
-    localStorage.setItem('pasadatos_config', JSON.stringify(appState));
+    localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(appState));
   } catch (e) {
     console.warn('Error guardando en localStorage:', e);
   }
 }
 
 /**
- * Carga el estado a partir de los query parameters en la URL
+ * Carga el estado a partir de los query parameters en la URL con validación estricta
  */
 function loadStateFromParams(params) {
-  if (params.has('n')) appState.n = params.get('n') || '';
-  if (params.has('r')) appState.r = params.get('r') || '';
-  if (params.has('a')) appState.a = sanitizeAlias(params.get('a') || '');
-  if (params.has('c')) appState.c = params.get('c') || '';
-  if (params.has('t')) appState.t = params.get('t') || '';
-  if (params.has('u')) appState.u = params.get('u') || '';
-  if (params.has('b')) appState.b = params.get('b') || '';
-  if (params.has('w')) appState.w = params.get('w') || '';
-  if (params.has('p')) appState.p = params.get('p') || '';
-  if (params.has('th')) appState.th = params.get('th') || 'blue';
+  if (params.has('n')) appState.n = sanitizeInput(params.get('n'), 80);
+  if (params.has('r')) appState.r = sanitizeInput(params.get('r'), 80);
+  if (params.has('a')) appState.a = sanitizeAlias(params.get('a'));
+  if (params.has('c')) appState.c = (params.get('c') || '').replace(/\D/g, '').slice(0, 22);
+  if (params.has('t')) appState.t = sanitizeInput(params.get('t'), 80);
+  if (params.has('u')) appState.u = formatCUIT(params.get('u'));
+  if (params.has('b')) appState.b = sanitizeInput(params.get('b'), 40);
+  if (params.has('w')) appState.w = sanitizeInput(params.get('w'), 25);
+  if (params.has('p')) appState.p = sanitizeInput(params.get('p'), 120);
+  if (params.has('th')) appState.th = sanitizeTheme(params.get('th'));
 }
 
 /**
@@ -342,7 +381,6 @@ function populateFormFields() {
     }
   });
 
-  // Indicador de validación CBU
   updateCbuValidationBadge();
   updateWhatsAppHint();
 }
@@ -391,16 +429,15 @@ function renderPosterPreview() {
   const container = document.getElementById('printable-poster');
   if (!container) return;
 
-  // Asignar el tema al contenedor del cartel
-  container.setAttribute('data-theme', appState.th || 'blue');
+  container.setAttribute('data-theme', sanitizeTheme(appState.th));
 
   const nameEl = document.getElementById('poster-name');
   if (nameEl) nameEl.textContent = appState.n || 'Nombre de tu Comercio';
 
   const rubroEl = document.getElementById('poster-rubro');
   if (rubroEl) {
-    if (appState.r) {
-      rubroEl.textContent = appState.r;
+    if (appState.r && appState.r.trim()) {
+      rubroEl.textContent = appState.r.trim();
       rubroEl.classList.remove('hidden');
     } else {
       rubroEl.classList.add('hidden');
@@ -419,8 +456,8 @@ function renderPosterPreview() {
   const cuitWrapper = document.getElementById('poster-cuit-wrapper');
   const cuitEl = document.getElementById('poster-cuit');
   if (cuitWrapper && cuitEl) {
-    if (appState.u) {
-      cuitEl.textContent = appState.u;
+    if (appState.u && appState.u.trim()) {
+      cuitEl.textContent = appState.u.trim();
       cuitWrapper.classList.remove('hidden');
     } else {
       cuitWrapper.classList.add('hidden');
@@ -430,27 +467,29 @@ function renderPosterPreview() {
   const cbuWrapper = document.getElementById('poster-cbu-wrapper');
   const cbuEl = document.getElementById('poster-cbu');
   if (cbuWrapper && cbuEl) {
-    if (appState.c) {
-      cbuEl.textContent = appState.c;
+    if (appState.c && appState.c.trim()) {
+      cbuEl.textContent = appState.c.trim();
       cbuWrapper.classList.remove('hidden');
     } else {
       cbuWrapper.classList.add('hidden');
     }
   }
 
+  // Promo en Cartel: Solo se muestra si fue cargada
+  const hasPromo = Boolean(appState.p && appState.p.trim().length > 0);
   const promoWrapper = document.getElementById('poster-promo-wrapper');
   const promoEl = document.getElementById('poster-promo');
   if (promoWrapper && promoEl) {
-    if (appState.p) {
-      promoEl.textContent = appState.p;
+    if (hasPromo) {
+      promoEl.textContent = appState.p.trim();
       promoWrapper.classList.remove('hidden');
     } else {
       promoWrapper.classList.add('hidden');
     }
   }
 
-  // Generar QR en el cartel
-  updateQRCode();
+  // Sincronizar el nodo de impresión estricta
+  syncPrintStage();
 }
 
 /**
@@ -460,15 +499,15 @@ function renderMobileMockupPreview() {
   const container = document.getElementById('mobile-preview-container');
   if (!container) return;
 
-  container.setAttribute('data-theme', appState.th || 'blue');
+  container.setAttribute('data-theme', sanitizeTheme(appState.th));
 
   const mName = document.getElementById('mockup-name');
   if (mName) mName.textContent = appState.n || 'Tu Comercio';
 
   const mRubro = document.getElementById('mockup-rubro');
   if (mRubro) {
-    if (appState.r) {
-      mRubro.textContent = appState.r;
+    if (appState.r && appState.r.trim()) {
+      mRubro.textContent = appState.r.trim();
       mRubro.classList.remove('hidden');
     } else {
       mRubro.classList.add('hidden');
@@ -487,8 +526,8 @@ function renderMobileMockupPreview() {
   const mCuitRow = document.getElementById('mockup-cuit-row');
   const mCuit = document.getElementById('mockup-cuit');
   if (mCuitRow && mCuit) {
-    if (appState.u) {
-      mCuit.textContent = appState.u;
+    if (appState.u && appState.u.trim()) {
+      mCuit.textContent = appState.u.trim();
       mCuitRow.classList.remove('hidden');
     } else {
       mCuitRow.classList.add('hidden');
@@ -498,19 +537,21 @@ function renderMobileMockupPreview() {
   const mCbuRow = document.getElementById('mockup-cbu-row');
   const mCbu = document.getElementById('mockup-cbu');
   if (mCbuRow && mCbu) {
-    if (appState.c) {
-      mCbu.textContent = appState.c;
+    if (appState.c && appState.c.trim()) {
+      mCbu.textContent = appState.c.trim();
       mCbuRow.classList.remove('hidden');
     } else {
       mCbuRow.classList.add('hidden');
     }
   }
 
+  // Promo en Maqueta: Solo se muestra si fue cargada
+  const hasPromo = Boolean(appState.p && appState.p.trim().length > 0);
   const mPromoRow = document.getElementById('mockup-promo-row');
   const mPromo = document.getElementById('mockup-promo');
   if (mPromoRow && mPromo) {
-    if (appState.p) {
-      mPromo.textContent = appState.p;
+    if (hasPromo) {
+      mPromo.textContent = appState.p.trim();
       mPromoRow.classList.remove('hidden');
     } else {
       mPromoRow.classList.add('hidden');
@@ -519,7 +560,7 @@ function renderMobileMockupPreview() {
 
   const mWaBtn = document.getElementById('mockup-wa-btn');
   if (mWaBtn) {
-    if (appState.w) {
+    if (appState.w && appState.w.trim()) {
       mWaBtn.classList.remove('hidden');
     } else {
       mWaBtn.classList.add('hidden');
@@ -529,20 +570,21 @@ function renderMobileMockupPreview() {
 
 /**
  * Renderiza la VISTA 2: MODO CLIENTE (Pantalla de Cobro Rápido)
+ * Condicional estricto: Si NO hay promo, se ocultan tanto la promo como la calculadora del ticket.
  */
 function renderClientView() {
   const clientRoot = document.getElementById('client-view');
   if (!clientRoot) return;
 
-  clientRoot.setAttribute('data-theme', appState.th || 'blue');
+  clientRoot.setAttribute('data-theme', sanitizeTheme(appState.th));
 
   const cName = document.getElementById('client-name');
   if (cName) cName.textContent = appState.n || 'Comercio';
 
   const cRubro = document.getElementById('client-rubro');
   if (cRubro) {
-    if (appState.r) {
-      cRubro.textContent = appState.r;
+    if (appState.r && appState.r.trim()) {
+      cRubro.textContent = appState.r.trim();
       cRubro.classList.remove('hidden');
     } else {
       cRubro.classList.add('hidden');
@@ -565,8 +607,8 @@ function renderClientView() {
   const cCuitRow = document.getElementById('client-cuit-row');
   const cCuit = document.getElementById('client-cuit');
   if (cCuitRow && cCuit) {
-    if (appState.u) {
-      cCuit.textContent = appState.u;
+    if (appState.u && appState.u.trim()) {
+      cCuit.textContent = appState.u.trim();
       cCuitRow.classList.remove('hidden');
     } else {
       cCuitRow.classList.add('hidden');
@@ -577,33 +619,41 @@ function renderClientView() {
   const cCbuRow = document.getElementById('client-cbu-row');
   const cCbu = document.getElementById('client-cbu');
   if (cCbuRow && cCbu) {
-    if (appState.c) {
-      cCbu.textContent = appState.c;
+    if (appState.c && appState.c.trim()) {
+      cCbu.textContent = appState.c.trim();
       cCbuRow.classList.remove('hidden');
     } else {
       cCbuRow.classList.add('hidden');
     }
   }
 
-  // Promo Banner
+  // REGLA CRÍTICA DE NEGOCIO:
+  // Si no se pone mensaje o promo destacada, no aparece ese recuadro ni la calculadora del ticket.
+  const hasPromo = Boolean(appState.p && appState.p.trim().length > 0);
+  const clientPromoCalcSection = document.getElementById('client-promo-calc-section');
   const cPromoBanner = document.getElementById('client-promo-banner');
   const cPromoText = document.getElementById('client-promo-text');
-  if (cPromoBanner && cPromoText) {
-    if (appState.p) {
-      cPromoText.textContent = appState.p;
-      cPromoBanner.classList.remove('hidden');
+
+  if (clientPromoCalcSection) {
+    if (hasPromo) {
+      clientPromoCalcSection.classList.remove('hidden');
+      if (cPromoBanner) cPromoBanner.classList.remove('hidden');
+      if (cPromoText) cPromoText.textContent = appState.p.trim();
+      initClientCalculator();
     } else {
-      cPromoBanner.classList.add('hidden');
+      clientPromoCalcSection.classList.add('hidden');
+      if (cPromoBanner) cPromoBanner.classList.add('hidden');
     }
   }
 
-  // Botón de WhatsApp
+  // Botón de WhatsApp con validación estricta de formato telefónico
   const cWaSection = document.getElementById('client-wa-section');
   const cWaLink = document.getElementById('client-wa-btn');
   if (cWaSection && cWaLink) {
-    if (appState.w) {
-      const normWa = normalizeArgentinaWhatsApp(appState.w);
-      const textMsg = `¡Hola! Te envío el comprobante de transferencia para *${appState.n || 'el local'}*.`;
+    const normWa = normalizeArgentinaWhatsApp(appState.w);
+    if (normWa && isValidWhatsApp(normWa)) {
+      const storeName = appState.n ? appState.n.trim() : 'el local';
+      const textMsg = `¡Hola! Te envío el comprobante de transferencia para *${storeName}*.`;
       cWaLink.href = `https://wa.me/${normWa}?text=${encodeURIComponent(textMsg)}`;
       cWaSection.classList.remove('hidden');
     } else {
@@ -611,7 +661,7 @@ function renderClientView() {
     }
   }
 
-  // Botón sutil para el dueño editar datos
+  // Enlace seguro para editar mis datos
   const editLink = document.getElementById('client-edit-link');
   if (editLink) {
     const editUrl = new URL(window.location.href);
@@ -619,14 +669,12 @@ function renderClientView() {
     editLink.href = editUrl.toString();
   }
 
-  // Inicializar o resetear calculadora de montos
-  initClientCalculator();
-
   if (window.lucide) window.lucide.createIcons();
 }
 
 /**
  * Calculadora interactiva rápida para el cliente (descuento y copiado de monto)
+ * Protegida contra valores negativos, infinitos o no numéricos.
  */
 function initClientCalculator() {
   const calcAmountInput = document.getElementById('client-calc-amount');
@@ -635,12 +683,15 @@ function initClientCalculator() {
   const calcCopyBtn = document.getElementById('client-calc-copy-btn');
   if (!calcAmountInput || !calcFinalTotal) return;
 
-  // Detectar porcentaje en la promo (ej: "10% OFF")
+  // Detección segura de porcentaje en la promo (ej: "10% OFF")
   let promoDiscountPercent = 0;
   if (appState.p) {
-    const match = appState.p.match(/(\d+)\s*%/);
+    const match = appState.p.match(/(\d{1,2})\s*%/);
     if (match && match[1]) {
-      promoDiscountPercent = parseInt(match[1], 10);
+      const parsedPct = parseInt(match[1], 10);
+      if (parsedPct > 0 && parsedPct <= 100) {
+        promoDiscountPercent = parsedPct;
+      }
     }
   }
 
@@ -652,11 +703,13 @@ function initClientCalculator() {
   }
 
   const updateCalculator = () => {
-    const val = parseFloat(calcAmountInput.value) || 0;
-    if (val <= 0) {
+    const rawVal = parseFloat(calcAmountInput.value);
+    if (isNaN(rawVal) || !isFinite(rawVal) || rawVal <= 0) {
       calcFinalTotal.textContent = '$0';
       return;
     }
+    // Cap máximo de 100 mil millones para evitar desbordes visuales
+    const val = Math.min(100000000000, Math.max(0, rawVal));
     let total = val;
     if (promoDiscountPercent > 0) {
       total = val - (val * (promoDiscountPercent / 100));
@@ -668,22 +721,23 @@ function initClientCalculator() {
 
   if (calcCopyBtn) {
     calcCopyBtn.onclick = () => {
-      const val = parseFloat(calcAmountInput.value) || 0;
-      if (val <= 0) {
+      const rawVal = parseFloat(calcAmountInput.value);
+      if (isNaN(rawVal) || !isFinite(rawVal) || rawVal <= 0) {
         showToast('Ingresá un monto para copiar', 'info');
         return;
       }
+      const val = Math.min(100000000000, Math.max(0, rawVal));
       let total = val;
       if (promoDiscountPercent > 0) {
         total = Math.round(val - (val * (promoDiscountPercent / 100)));
       }
-      copyToClipboard(total.toString(), `Monto $${total} copiado para tu transferencia`);
+      copyToClipboard(total.toString(), `Monto $${total.toLocaleString('es-AR')} copiado`);
     };
   }
 }
 
 /**
- * Maneja el evento de clic en el BOTÓN GIGANTE DE COPIAR ALIAS (Modo Cliente)
+ * Maneja el clic en el BOTÓN GIGANTE DE COPIAR ALIAS (Modo Cliente)
  */
 function handleClientCopyAlias() {
   const btn = document.getElementById('client-copy-alias-btn');
@@ -694,7 +748,7 @@ function handleClientCopyAlias() {
 
   copyToClipboard(appState.a, '¡Alias copiado! Abrí tu billetera y pegalo');
 
-  // Estado visual activo verde
+  // Estado visual verde esmeralda activo
   btn.classList.remove('bg-theme-primary', 'hover:brightness-110');
   btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'scale-[1.02]');
   btnText.textContent = '¡ALIAS COPIADO!';
@@ -782,7 +836,7 @@ async function downloadPosterPNG() {
 
   try {
     const canvas = await html2canvas(posterElem, {
-      scale: 3, // Ultra alta resolución para impresión / redes
+      scale: 3,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false
@@ -826,7 +880,144 @@ function copyPaymentLink() {
 function shareOnWhatsApp() {
   const url = buildShareUrl(appState);
   const msg = `¡Hola! Te paso nuestros datos de transferencia y contacto directo para pagar rápido:\n\n${url}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+}
+
+// =========================================================================
+// SISTEMA DE RATE LIMITING PARA EL BOTÓN DE ACTUALIZAR (1 VEZ POR MINUTO)
+// =========================================================================
+
+/**
+ * Inicializa el estado del temporizador de cooldown desde localStorage
+ */
+function initUpdateCooldown() {
+  const btn = document.getElementById('btn-update-qr');
+  const btnText = document.getElementById('btn-update-qr-text');
+  const statusContainer = document.getElementById('update-qr-status');
+  if (!btn || !btnText) return;
+
+  const lastUpdateStr = localStorage.getItem(STORAGE_LAST_UPDATE_KEY);
+  if (!lastUpdateStr) {
+    btn.disabled = false;
+    btnText.textContent = 'Actualizar Datos y QR';
+    return;
+  }
+
+  const lastUpdate = parseInt(lastUpdateStr, 10);
+  const now = Date.now();
+  const elapsed = now - lastUpdate;
+
+  if (elapsed >= 0 && elapsed < UPDATE_COOLDOWN_MS) {
+    const remainingSec = Math.ceil((UPDATE_COOLDOWN_MS - elapsed) / 1000);
+    setUpdateCooldown(remainingSec);
+  } else {
+    btn.disabled = false;
+    btnText.textContent = 'Actualizar Datos y QR';
+    if (statusContainer) {
+      statusContainer.innerHTML = '<i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i><span>Permite actualizar hasta 1 vez por minuto</span>';
+      if (window.lucide) window.lucide.createIcons();
+    }
+  }
+}
+
+/**
+ * Activa la cuenta regresiva visual y deshabilita el botón de actualizar
+ */
+function setUpdateCooldown(remainingSeconds) {
+  const btn = document.getElementById('btn-update-qr');
+  const btnText = document.getElementById('btn-update-qr-text');
+  const statusContainer = document.getElementById('update-qr-status');
+  if (!btn || !btnText) return;
+
+  btn.disabled = true;
+  if (updateCooldownTimer) clearInterval(updateCooldownTimer);
+
+  let secondsLeft = remainingSeconds;
+
+  const renderTimerState = () => {
+    btnText.textContent = `Esperá ${secondsLeft}s...`;
+    if (statusContainer) {
+      statusContainer.innerHTML = `<i data-lucide="hourglass" class="w-3.5 h-3.5 text-amber-500 animate-spin"></i><span class="text-amber-700 font-semibold">Próxima actualización en ${secondsLeft}s</span>`;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  };
+
+  renderTimerState();
+
+  updateCooldownTimer = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft <= 0) {
+      clearInterval(updateCooldownTimer);
+      updateCooldownTimer = null;
+      btn.disabled = false;
+      btnText.textContent = 'Actualizar Datos y QR';
+      if (statusContainer) {
+        statusContainer.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-700 font-medium">Listo para actualizar</span>';
+        if (window.lucide) window.lucide.createIcons();
+      }
+    } else {
+      renderTimerState();
+    }
+  }, 1000);
+}
+
+/**
+ * Recoge los valores actuales de los inputs del formulario
+ */
+function collectFormValues() {
+  const getVal = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  };
+
+  appState.n = sanitizeInput(getVal('input-name'), 80);
+  appState.r = sanitizeInput(getVal('input-rubro'), 80);
+  appState.a = sanitizeAlias(getVal('input-alias'));
+  appState.c = getVal('input-cbu').replace(/\D/g, '').slice(0, 22);
+  appState.t = sanitizeInput(getVal('input-titular'), 80);
+  appState.u = formatCUIT(getVal('input-cuit'));
+  appState.b = sanitizeInput(getVal('input-banco'), 40);
+  appState.w = sanitizeInput(getVal('input-whatsapp'), 25);
+  appState.p = sanitizeInput(getVal('input-promo'), 120);
+  appState.th = sanitizeTheme(appState.th);
+}
+
+/**
+ * Maneja el clic en "Actualizar Datos y Regenerar QR" (Rate Limit: 1 vez por minuto)
+ */
+function handleUpdateQRClick() {
+  const lastUpdateStr = localStorage.getItem(STORAGE_LAST_UPDATE_KEY);
+  const now = Date.now();
+
+  if (lastUpdateStr) {
+    const lastUpdate = parseInt(lastUpdateStr, 10);
+    const elapsed = now - lastUpdate;
+    if (elapsed >= 0 && elapsed < UPDATE_COOLDOWN_MS) {
+      const remainingSec = Math.ceil((UPDATE_COOLDOWN_MS - elapsed) / 1000);
+      showToast(`Podés actualizar nuevamente en ${remainingSec} segundos`, 'info');
+      return;
+    }
+  }
+
+  // 1. Recoger valores actuales de los inputs
+  collectFormValues();
+
+  // 2. Persistir en localStorage
+  saveStateToStorage();
+
+  // 3. Registrar marca temporal para el rate limit
+  localStorage.setItem(STORAGE_LAST_UPDATE_KEY, now.toString());
+
+  // 4. Regenerar el código QR y vistas
+  updateQRCode();
+  renderPosterPreview();
+  renderMobileMockupPreview();
+
+  // 5. Iniciar temporizador de cooldown de 60 segundos
+  setUpdateCooldown(60);
+
+  // 6. Notificación visual al usuario
+  showToast('✓ Datos y código QR actualizados con éxito', 'success');
 }
 
 /**
@@ -845,6 +1036,7 @@ function bindInputEvents() {
       appState[key] = val;
       saveStateToStorage();
 
+      // Actualizar la vista tipográfica en tiempo real
       if (currentPreviewTab === 'poster') {
         renderPosterPreview();
       } else {
@@ -856,20 +1048,26 @@ function bindInputEvents() {
     });
   };
 
-  onInput('input-name', 'n');
-  onInput('input-rubro', 'r');
+  onInput('input-name', 'n', (v) => sanitizeInput(v, 80));
+  onInput('input-rubro', 'r', (v) => sanitizeInput(v, 80));
   onInput('input-alias', 'a', sanitizeAlias);
   onInput('input-cbu', 'c', (val) => val.replace(/\D/g, '').slice(0, 22));
-  onInput('input-titular', 't');
+  onInput('input-titular', 't', (v) => sanitizeInput(v, 80));
   onInput('input-cuit', 'u', formatCUIT);
-  onInput('input-banco', 'b');
-  onInput('input-whatsapp', 'w');
-  onInput('input-promo', 'p');
+  onInput('input-banco', 'b', (v) => sanitizeInput(v, 40));
+  onInput('input-whatsapp', 'w', (v) => sanitizeInput(v, 25));
+  onInput('input-promo', 'p', (v) => sanitizeInput(v, 120));
+
+  // Botón Principal de Actualizar Datos y Regenerar QR (con Rate Limit)
+  const updateQrBtn = document.getElementById('btn-update-qr');
+  if (updateQrBtn) {
+    updateQrBtn.addEventListener('click', handleUpdateQRClick);
+  }
 
   // Selector de Temas
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.addEventListener('click', () => {
-      const selectedTheme = btn.getAttribute('data-theme-value');
+      const selectedTheme = sanitizeTheme(btn.getAttribute('data-theme-value'));
       appState.th = selectedTheme;
       saveStateToStorage();
 
@@ -886,7 +1084,7 @@ function bindInputEvents() {
   // Píldoras rápidas de Banco / Billetera
   document.querySelectorAll('.bank-quick-pill').forEach(pill => {
     pill.addEventListener('click', () => {
-      const bank = pill.getAttribute('data-bank');
+      const bank = sanitizeInput(pill.getAttribute('data-bank'), 40);
       const input = document.getElementById('input-banco');
       if (input && bank) {
         input.value = bank;
@@ -909,6 +1107,7 @@ function bindInputEvents() {
         appState = { ...DEFAULT_STATE };
         saveStateToStorage();
         populateFormFields();
+        updateQRCode();
         renderPosterPreview();
         renderMobileMockupPreview();
         showToast('Datos de ejemplo restaurados', 'info');
@@ -935,6 +1134,7 @@ function bindInputEvents() {
         };
         saveStateToStorage();
         populateFormFields();
+        updateQRCode();
         renderPosterPreview();
         renderMobileMockupPreview();
         showToast('Formulario vaciado', 'info');
@@ -969,7 +1169,7 @@ function bindInputEvents() {
   if (viewClientBtn) {
     viewClientBtn.addEventListener('click', () => {
       const url = buildShareUrl(appState);
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     });
   }
 }
@@ -1010,8 +1210,10 @@ function showCreatorView() {
   if (clientRoot) clientRoot.classList.add('hidden');
 
   populateFormFields();
+  updateQRCode();
   renderPosterPreview();
   renderMobileMockupPreview();
+  initUpdateCooldown();
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -1037,16 +1239,16 @@ function initRouter() {
   const hasName = searchParams.has('n') && searchParams.get('n').trim().length > 0;
 
   if (isEdit) {
-    // Modo Edición: Se forzó entrar al Creador con los datos de la URL
+    // Modo Edición forzado desde URL
     loadStateFromParams(searchParams);
     saveStateToStorage();
     showCreatorView();
   } else if (hasAlias || hasName) {
-    // Modo Cliente: El usuario escaneó el QR o abrió el link
+    // Modo Cliente directo por link o escaneo de QR
     loadStateFromParams(searchParams);
     showClientView();
   } else {
-    // Modo Creador: Acceso directo a la raíz
+    // Modo Creador
     loadStateFromStorage();
     showCreatorView();
   }
