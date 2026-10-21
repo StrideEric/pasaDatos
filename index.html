@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pasaDatos — Cobro Digital Rápido por Transferencia | prolijo.ar</title>
+  
+  <meta name="description" content="Generador gratuito de carteles QR para mostrador y links de cobro por transferencia bancaria en Argentina. Sin base de datos, ultrarrápido y sin agendar números. Impulsado por prolijo.ar">
+  <meta name="keywords" content="cobro transferencia, alias cbu, alias cvu, cartel qr mostrador, mercadopago, prolijo.ar, argentina, pymes">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="pasaDatos — Cobro Digital Rápido por Transferencia">
+  <meta property="og:description" content="Creá tu cartel QR de mostrador y link de cobro sin base de datos. Evitá dictar el Alias y mandá comprobantes sin agendar.">
+  <meta property="og:type" content="website">
+
+  <!-- Favicon SVG con rayo de transferencia -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3E%3C/svg%3E">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Librerías Externas CDN -->
+  <!-- QRious: Generación ultra nítida de QR en canvas y DataURL -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <!-- html2canvas: Exportación a PNG de alta definición -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="min-h-full flex flex-col text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- Contenedor de Alertas Toast -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Contenedor exclusivo para Impresión física (@media print) -->
+  <div id="print-stage" aria-hidden="true"></div>
+
+  <!-- ====================================================================
+       VISTA 1: MODO CREADOR (Estudio + Landing para Comerciantes)
+       ==================================================================== -->
+  <div id="creator-view" class="flex-grow flex flex-col">
+    
+    <!-- Barra Superior / Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xl font-extrabold tracking-tight text-slate-900 font-display">pasa<span class="text-blue-600">Datos</span></span>
+              <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded-full border border-slate-200">v2.0 Zero-DB</span>
+            </div>
+            <p class="text-xs text-slate-500">
+              un producto libre de 
+              <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="font-bold text-slate-800 hover:text-blue-600 transition-colors inline-flex items-center gap-0.5">
+                prolijo.ar <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+            </p>
+          </div>
+        </div>
+
+        <!-- Badges y Acciones Rápidas -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button id="btn-reset-demo" type="button" class="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="Restaurar datos de ejemplo">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 mr-1.5"></i>
+            Ejemplo
+          </button>
+          <button id="btn-clear-form" type="button" class="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Vaciar formulario">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1.5"></i>
+            Limpiar
+          </button>
+          <button id="btn-preview-client-mode" type="button" class="inline-flex items-center px-3.5 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all shadow-xs">
+            <i data-lucide="smartphone" class="w-4 h-4 mr-1.5"></i>
+            Probar como Cliente
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Banner Hero Informativo -->
+    <div class="bg-gradient-to-b from-blue-50/70 via-slate-50 to-slate-50 border-b border-slate-200/60 py-6 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full mb-2 border border-blue-200/50">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            100% Privado — Cero Base de Datos — Toda la info viaja en tu Link y QR
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display">
+            Cartel QR de mostrador y cobro digital sin complicaciones
+          </h1>
+          <p class="text-sm text-slate-600 mt-1 max-w-2xl">
+            Completá tus datos una sola vez. Generá el cartel para imprimir en tu mostrador y compartí el link por WhatsApp para que tus clientes copien el Alias en 1 segundo y te manden el comprobante sin agendarte.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs text-slate-500 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+          <span>Guardado automático en este navegador</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal: Layout de 2 Columnas -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        <!-- ============================================================
+             COLUMNA IZQUIERDA: FORMULARIO DEL COMERCIANTE (lg:col-span-6)
+             ============================================================ -->
+        <div class="lg:col-span-6 space-y-6">
+
+          <!-- Card 1: Identidad del Comercio -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+            <div class="flex items-center space-x-2.5 pb-4 border-b border-slate-100 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                1
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 font-display">Identidad del Comercio</h2>
+                <p class="text-xs text-slate-500">¿Cómo te conocen tus clientes?</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label for="input-name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Nombre del Comercio o Profesional <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="store" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-name" placeholder="Ej: Ferretería El Tornillo" required
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+              </div>
+
+              <div>
+                <label for="input-rubro" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Rubro o Subtítulo corto <span class="text-slate-400 font-normal">(Opcional)</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="tag" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-rubro" placeholder="Ej: Materiales eléctricos y sanitarios"
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Datos Bancarios de Destino -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+            <div class="flex items-center space-x-2.5 pb-4 border-b border-slate-100 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 font-display">Datos de Cobro Bancario / Fintech</h2>
+                <p class="text-xs text-slate-500">La cuenta donde recibirás las transferencias directas</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+
+              <!-- Selector rápido de Banco / Billetera -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Banco o Billetera destino <span class="text-red-500">*</span>
+                </label>
+                
+                <!-- Píldoras rápidas -->
+                <div class="flex flex-wrap gap-1.5 mb-2.5">
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Mercado Pago">Mercado Pago</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Banco Galicia">Galicia</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Banco Nación">BNA</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Santander">Santander</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="BBVA">BBVA</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Brubank">Brubank</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Ualá">Ualá</button>
+                  <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Naranja X">Naranja X</button>
+                </div>
+
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-banco" placeholder="Escribí o seleccioná tu entidad" required
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+              </div>
+
+              <!-- Alias de CBU / CVU -->
+              <div>
+                <label for="input-alias" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Alias CBU / CVU <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="at-sign" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-alias" placeholder="EJ: FERRE.TORNILLO.MP" required
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-mono-code font-bold uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all tracking-wide">
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Se normalizará en mayúsculas sin espacios.</p>
+              </div>
+
+              <!-- Titular de la cuenta -->
+              <div>
+                <label for="input-titular" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Titular de la Cuenta <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="user-check" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-titular" placeholder="Ej: Juan Carlos Pérez" required
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+              </div>
+
+              <!-- CUIT / CUIL -->
+              <div>
+                <label for="input-cuit" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  CUIT / CUIL del Titular <span class="text-slate-400 font-normal">(Opcional)</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="fingerprint" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-cuit" placeholder="XX-XXXXXXXX-X" maxlength="13"
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-mono-code focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Formateado automático al tipear.</p>
+              </div>
+
+              <!-- CBU / CVU de 22 dígitos -->
+              <div>
+                <label for="input-cbu" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  CBU o CVU Completo <span class="text-slate-400 font-normal">(Opcional, 22 dígitos)</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="hash" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-cbu" placeholder="0000003100085492348571" maxlength="22"
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-mono-code focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+                <div id="cbu-validation-badge" class="text-xs text-slate-400 mt-1"></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Card 3: WhatsApp y Beneficios -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+            <div class="flex items-center space-x-2.5 pb-4 border-b border-slate-100 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                3
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 font-display">WhatsApp y Beneficios</h2>
+                <p class="text-xs text-slate-500">Recepción inmediata de comprobantes sin agendar</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <!-- WhatsApp -->
+              <div>
+                <label for="input-whatsapp" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Número de WhatsApp para Comprobantes <span class="text-slate-400 font-normal">(Recomendado)</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-emerald-600">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-whatsapp" placeholder="Ej: 11 2345 6789 o 3624000000"
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
+                </div>
+                <div id="whatsapp-preview-hint" class="text-xs text-slate-400 mt-1"></div>
+              </div>
+
+              <!-- Promo o Mensaje Destacado -->
+              <div>
+                <label for="input-promo" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Mensaje o Promo Destacada <span class="text-slate-400 font-normal">(Opcional)</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="input-promo" placeholder="Ej: 10% OFF abonando por transferencia o Pedí Factura A o B"
+                    class="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Estilo Visual del Cartel -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+            <div class="flex items-center space-x-2.5 pb-4 border-b border-slate-100 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                4
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 font-display">Color de Acento del Cartel</h2>
+                <p class="text-xs text-slate-500">Elegí la identidad visual que mejor combine con tu local</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-5 gap-3">
+              <!-- Azul Fintech -->
+              <button type="button" data-theme-value="blue" class="theme-option flex flex-col items-center gap-1.5 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-center">
+                <span class="w-7 h-7 rounded-full bg-blue-600 shadow-xs"></span>
+                <span class="text-[11px] font-semibold text-slate-700">Azul</span>
+              </button>
+              <!-- Verde Esmeralda -->
+              <button type="button" data-theme-value="emerald" class="theme-option flex flex-col items-center gap-1.5 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-center">
+                <span class="w-7 h-7 rounded-full bg-emerald-600 shadow-xs"></span>
+                <span class="text-[11px] font-semibold text-slate-700">Esmeralda</span>
+              </button>
+              <!-- Violeta Moderno -->
+              <button type="button" data-theme-value="violet" class="theme-option flex flex-col items-center gap-1.5 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-center">
+                <span class="w-7 h-7 rounded-full bg-purple-600 shadow-xs"></span>
+                <span class="text-[11px] font-semibold text-slate-700">Violeta</span>
+              </button>
+              <!-- Negro Elegante -->
+              <button type="button" data-theme-value="slate" class="theme-option flex flex-col items-center gap-1.5 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-center">
+                <span class="w-7 h-7 rounded-full bg-slate-900 shadow-xs"></span>
+                <span class="text-[11px] font-semibold text-slate-700">Negro</span>
+              </button>
+              <!-- Naranja Comercial -->
+              <button type="button" data-theme-value="orange" class="theme-option flex flex-col items-center gap-1.5 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-center">
+                <span class="w-7 h-7 rounded-full bg-orange-600 shadow-xs"></span>
+                <span class="text-[11px] font-semibold text-slate-700">Naranja</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================
+             COLUMNA DERECHA: VISTA PREVIA EN VIVO + EXPORTACIÓN (lg:col-span-6)
+             ============================================================ -->
+        <div class="lg:col-span-6 sticky top-20 space-y-6">
+
+          <!-- Selector de Pestañas de Vista Previa -->
+          <div class="bg-slate-200/80 p-1 rounded-2xl flex items-center justify-between">
+            <button id="tab-btn-poster" type="button" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-white text-slate-900 shadow-xs transition-all">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              Cartel para Mostrador (A4/A5)
+            </button>
+            <button id="tab-btn-mobile" type="button" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 transition-all">
+              <i data-lucide="smartphone" class="w-4 h-4"></i>
+              Vista Celular del Cliente
+            </button>
+          </div>
+
+          <!-- CONTENIDO PESTAÑA 1: CARTEL PARA MOSTRADOR -->
+          <div id="preview-view-poster" class="relative">
+            <!-- CARTEL IMPRIMIBLE A4/A5 -->
+            <div id="printable-poster" class="printable-poster-card" data-theme="blue">
+              
+              <!-- Cabecera de Color de Acento -->
+              <div class="bg-theme-gradient text-white p-6 sm:p-7 relative overflow-hidden">
+                <!-- Decoración de fondo sutil -->
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+                
+                <div class="flex items-center justify-between mb-3 relative z-10">
+                  <span class="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 fill-current"></i>
+                    Cobro por Transferencia
+                  </span>
+                  <span class="text-xs font-bold text-white/80">Inmediato & Sin Comisión</span>
+                </div>
+
+                <div class="relative z-10">
+                  <h3 id="poster-name" class="text-2xl sm:text-3xl font-black tracking-tight leading-tight font-display drop-shadow-xs">
+                    Café & Deli Martínez
+                  </h3>
+                  <p id="poster-rubro" class="text-sm font-medium text-white/90 mt-1">
+                    Cafetería de Especialidad & Pastelería
+                  </p>
+                </div>
+              </div>
+
+              <!-- Cuerpo del Cartel: QR y Marco de Escaneo -->
+              <div class="p-6 sm:p-7 flex-grow flex flex-col items-center justify-center text-center space-y-5 bg-white">
+                
+                <!-- Marco de Escaneo del QR -->
+                <div class="w-full max-w-xs bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl p-4 sm:p-5 flex flex-col items-center shadow-inner relative">
+                  <p class="text-xs font-bold text-slate-700 tracking-tight mb-3 flex items-center gap-1.5">
+                    <i data-lucide="camera" class="w-4 h-4 text-theme-primary"></i>
+                    Escaneá con la cámara de tu celular
+                  </p>
+                  
+                  <!-- Imagen QR en alta definición -->
+                  <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                    <img id="poster-qr-img" class="w-48 h-48 sm:w-52 sm:h-52 object-contain" alt="Código QR de Cobro">
+                  </div>
+
+                  <p class="text-[11px] font-semibold text-slate-500 mt-3 leading-tight max-w-[240px]">
+                    Copiá el Alias con 1 toque y mandanos el comprobante por WhatsApp sin agendarnos.
+                  </p>
+                </div>
+
+                <!-- Caja de Datos para quien tipea a mano -->
+                <div class="w-full bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left space-y-2.5">
+                  <div class="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">ALIAS PARA TRANSFERIR:</span>
+                    <span id="poster-banco" class="text-xs font-bold text-theme-primary">Mercado Pago</span>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <span id="poster-alias" class="text-lg sm:text-xl font-extrabold text-slate-900 font-mono-code tracking-wider break-all select-all">
+                      CAFE.MARTINEZ.MP
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 pt-1 border-t border-slate-100">
+                    <div>
+                      <span class="block text-[10px] uppercase text-slate-400 font-bold">Titular:</span>
+                      <span id="poster-titular" class="font-bold text-slate-800 truncate block">Gonzalo Martínez</span>
+                    </div>
+                    <div id="poster-cuit-wrapper">
+                      <span class="block text-[10px] uppercase text-slate-400 font-bold">CUIT / CUIL:</span>
+                      <span id="poster-cuit" class="font-mono-code font-bold text-slate-800 block">20-38495821-3</span>
+                    </div>
+                  </div>
+
+                  <div id="poster-cbu-wrapper" class="hidden text-xs text-slate-600 pt-1 border-t border-slate-100">
+                    <span class="block text-[10px] uppercase text-slate-400 font-bold">CBU / CVU:</span>
+                    <span id="poster-cbu" class="font-mono-code font-bold text-slate-800 break-all select-all block">0000003100085492348571</span>
+                  </div>
+                </div>
+
+                <!-- Píldora de Promo (si existe) -->
+                <div id="poster-promo-wrapper" class="w-full">
+                  <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-900 text-xs font-bold flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+                    <span id="poster-promo">10% OFF abonando por transferencia inmediata</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Pie del Cartel (Branding Estratégico Obligatorio) -->
+              <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between text-xs border-t border-slate-800">
+                <div class="flex items-center space-x-1.5 font-medium text-slate-300">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-blue-400"></i>
+                  <span>Cobro digital rápido con <strong class="text-white">pasaDatos</strong></span>
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  Creá el tuyo gratis en <strong class="text-white">prolijo.ar</strong>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- CONTENIDO PESTAÑA 2: VISTA CELULAR DEL CLIENTE (MOCKUP) -->
+          <div id="preview-view-mobile" class="hidden flex justify-center py-4">
+            <div class="phone-mockup w-full max-w-[340px] border border-slate-200 shadow-2xl relative">
+              <div class="phone-mockup-speaker"></div>
+              
+              <!-- Pantalla Interna -->
+              <div id="mobile-preview-container" class="pt-8 pb-6 px-4 space-y-4 bg-slate-50 min-h-[560px] text-left" data-theme="blue">
+                
+                <!-- Encabezado Móvil -->
+                <div class="text-center pt-2">
+                  <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full mb-1">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i> Verificado por el comercio
+                  </span>
+                  <h4 id="mockup-name" class="text-base font-extrabold text-slate-900 font-display">Café & Deli Martínez</h4>
+                  <p id="mockup-rubro" class="text-xs text-slate-500">Cafetería</p>
+                </div>
+
+                <!-- Tarjeta Alias Mockup -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-slate-400">ALIAS CBU/CVU:</span>
+                    <span id="mockup-banco" class="font-bold text-theme-primary text-xs">Mercado Pago</span>
+                  </div>
+
+                  <div id="mockup-alias" class="text-center font-mono-code font-extrabold text-lg text-slate-900 bg-slate-100 py-2 rounded-xl tracking-wider">
+                    CAFE.MARTINEZ.MP
+                  </div>
+
+                  <button type="button" class="w-full bg-theme-primary text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    COPIAR ALIAS
+                  </button>
+                </div>
+
+                <!-- Verificación Mockup -->
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 text-xs space-y-2">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Titular:</span>
+                    <span id="mockup-titular" class="font-bold text-slate-800">Gonzalo Martínez</span>
+                  </div>
+                  <div id="mockup-cuit-row" class="flex justify-between">
+                    <span class="text-slate-400">CUIT:</span>
+                    <span id="mockup-cuit" class="font-mono-code font-bold text-slate-800">20-38495821-3</span>
+                  </div>
+                  <div id="mockup-cbu-row" class="hidden flex justify-between">
+                    <span class="text-slate-400">CBU:</span>
+                    <span id="mockup-cbu" class="font-mono-code text-[10px] text-slate-800 truncate max-w-[160px]">0000003100085492348571</span>
+                  </div>
+                </div>
+
+                <!-- Promo Mockup -->
+                <div id="mockup-promo-row" class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center text-amber-900 text-xs font-semibold">
+                  <span id="mockup-promo">10% OFF abonando por transferencia</span>
+                </div>
+
+                <!-- WhatsApp Mockup -->
+                <div id="mockup-wa-btn" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i>
+                  Enviar comprobante por WhatsApp
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTONES DE ACCIÓN PARA EL COMERCIANTE -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+              Herramientas de Exportación
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <!-- Imprimir Cartel / Guardar PDF -->
+              <button id="btn-print-poster" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                Imprimir Cartel / PDF
+              </button>
+
+              <!-- Descargar Imagen PNG -->
+              <button id="btn-download-png" type="button" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                Descargar Imagen (PNG HD)
+              </button>
+
+              <!-- Copiar Link de Cobro -->
+              <button id="btn-copy-link" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                <i data-lucide="link-2" class="w-4 h-4"></i>
+                Copiar mi Link de Cobro
+              </button>
+
+              <!-- Compartir por WhatsApp -->
+              <button id="btn-share-whatsapp" type="button" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                <i data-lucide="share-2" class="w-4 h-4 text-emerald-600"></i>
+                Compartir por WhatsApp
+              </button>
+            </div>
+            
+            <p class="text-[11px] text-slate-400 text-center pt-1">
+              Tip: Al tocar "Imprimir", elegí tamaño A4 o A5 y activá "Gráficos de fondo" en tu navegador.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           SECCIÓN DE MARKETING Y UPSELL B2B PARA "prolijo.ar"
+           ============================================================ -->
+      <section class="mt-16 pt-12 border-t border-slate-200">
+        <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 text-white rounded-3xl p-8 sm:p-12 relative overflow-hidden shadow-xl">
+          <!-- Decoración visual -->
+          <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+
+          <div class="max-w-3xl mb-10 relative z-10">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-950/80 px-3 py-1 rounded-full border border-blue-800 mb-3">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              Impulsado por prolijo.ar
+            </span>
+            <h2 class="text-2xl sm:text-4xl font-black tracking-tight font-display text-white">
+              ¿Tu negocio creció y necesitás ir un paso más allá?
+            </h2>
+            <p class="text-slate-300 text-sm sm:text-base mt-2.5 leading-relaxed">
+              <strong>pasaDatos</strong> resuelve tu cobro diario en el mostrador. En <strong>prolijo.ar</strong> ayudamos a comercios, distribuidoras y pymes argentinas a ordenar su operación y multiplicar ventas con tecnología simple.
+            </p>
+          </div>
+
+          <!-- 3 Tarjetas de Servicios B2B -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-10">
+            <!-- Servicio 1: POS & Stock -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl hover:border-blue-500/50 transition-all group">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <i data-lucide="boxes" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-2 font-display">Punto de Venta (POS) y Stock</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Controlá tu caja diaria, listas de precios mayorista/minorista e inventario en tiempo real sin planillas rotas ni errores de cobro.
+              </p>
+            </div>
+
+            <!-- Servicio 2: WhatsApp Automatizado -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl hover:border-emerald-500/50 transition-all group">
+              <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <i data-lucide="bot" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-2 font-display">Automatización de WhatsApp</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Bots que responden listas de precios las 24hs, toman pedidos de clientes y validan comprobantes de transferencia automáticamente.
+              </p>
+            </div>
+
+            <!-- Servicio 3: Microsistemas a Medida -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl hover:border-purple-500/50 transition-all group">
+              <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <i data-lucide="code" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-2 font-display">Microsistemas a Medida</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Herramientas rápidas y paneles internos diseñados para la realidad de tu local, sin contratos mensuales abusivos.
+              </p>
+            </div>
+          </div>
+
+          <!-- CTA Final hacia prolijo.ar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-800 relative z-10">
+            <div class="text-xs text-slate-400 text-center sm:text-left">
+              Charlá directamente con nuestro equipo de desarrollo e ingeniería en Argentina.
+            </div>
+            <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-6 py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-blue-600/30">
+              <span>Conocé más soluciones en prolijo.ar</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer General -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p><strong>pasaDatos</strong> — Generador de Carteles QR & Links de Cobro en Argentina.</p>
+        <p>Diseñado y mantenido con tecnología limpia por <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="font-bold text-slate-800 hover:text-blue-600">prolijo.ar</a></p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ====================================================================
+       VISTA 2: MODO CLIENTE (Pantalla de Cobro Rápido al escanear QR / link)
+       ==================================================================== -->
+  <div id="client-view" class="hidden flex-grow flex flex-col justify-between py-6 px-4 bg-slate-100 min-h-screen" data-theme="blue">
+    
+    <div class="w-full max-w-md mx-auto space-y-4">
+      
+      <!-- Barra superior con Identidad del Comercio -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden">
+        <!-- Acento superior de color -->
+        <div class="absolute top-0 inset-x-0 h-2 bg-theme-primary"></div>
+
+        <div class="flex items-center justify-between mt-1 mb-2">
+          <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+            Datos verificados por el comercio
+          </span>
+          <span id="client-banco-badge" class="text-xs font-bold text-theme-primary bg-theme-light px-2.5 py-0.5 rounded-full border border-theme-border">
+            Mercado Pago
+          </span>
+        </div>
+
+        <h1 id="client-name" class="text-2xl font-black text-slate-900 tracking-tight font-display">
+          Café & Deli Martínez
+        </h1>
+        <p id="client-rubro" class="text-xs font-medium text-slate-500 mt-0.5">
+          Cafetería de Especialidad & Pastelería
+        </p>
+      </div>
+
+      <!-- TARJETA PRINCIPAL DEL ALIAS (EL CORAZÓN DE LA APLICACIÓN) -->
+      <div class="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-md space-y-4 text-center">
+        <div class="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+          Alias de Transferencia
+        </div>
+
+        <!-- Alias grande y legible -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4">
+          <span id="client-alias-display" class="font-mono-code font-black text-2xl sm:text-3xl text-slate-900 tracking-wider break-all select-all block">
+            CAFE.MARTINEZ.MP
+          </span>
+        </div>
+
+        <!-- BOTÓN GIGANTE PRIMARIO: COPIAR ALIAS -->
+        <button id="client-copy-alias-btn" type="button" class="w-full bg-theme-primary hover:brightness-110 active:scale-95 text-white py-4 px-6 rounded-2xl font-black text-base flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-blue-600/25 transition-all cursor-pointer">
+          <div class="flex items-center gap-2">
+            <i id="client-copy-alias-icon" data-lucide="copy" class="w-5 h-5"></i>
+            <span id="client-copy-alias-text" class="tracking-wide">COPIAR ALIAS</span>
+          </div>
+          <span id="client-copy-alias-sub" class="text-[11px] font-semibold text-white/80 font-normal">
+            Tocá acá para copiar y pegar en tu banco o billetera
+          </span>
+        </button>
+      </div>
+
+      <!-- TARJETA DE VERIFICACIÓN DE DATOS (Para corroborar antes de transferir) -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 pb-2 border-b border-slate-100">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+          Datos para corroborar destinatario
+        </h3>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Titular -->
+          <div class="flex justify-between items-center py-1">
+            <span class="text-slate-500 font-medium">Titular de la cuenta:</span>
+            <span id="client-titular" class="font-bold text-slate-900 text-right">Gonzalo Agustín Martínez</span>
+          </div>
+
+          <!-- Banco -->
+          <div class="flex justify-between items-center py-1 border-t border-slate-100">
+            <span class="text-slate-500 font-medium">Banco o Billetera:</span>
+            <span id="client-banco" class="font-bold text-slate-900">Mercado Pago</span>
+          </div>
+
+          <!-- CUIT / CUIL -->
+          <div id="client-cuit-row" class="flex justify-between items-center py-1 border-t border-slate-100">
+            <span class="text-slate-500 font-medium">CUIT / CUIL:</span>
+            <div class="flex items-center gap-2">
+              <span id="client-cuit" class="font-mono-code font-bold text-slate-900">20-38495821-3</span>
+              <button id="client-copy-cuit-btn" type="button" class="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Copiar CUIT">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- CBU / CVU (si fue configurado) -->
+          <div id="client-cbu-row" class="hidden flex justify-between items-center py-1 border-t border-slate-100">
+            <span class="text-slate-500 font-medium">CBU / CVU:</span>
+            <div class="flex items-center gap-2">
+              <span id="client-cbu" class="font-mono-code text-[11px] font-bold text-slate-900 truncate max-w-[150px]">0000003100085492348571</span>
+              <button id="client-copy-cbu-btn" type="button" class="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Copiar CBU">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALCULADORA RÁPIDA / ANOTADOR DE MONTO & PROMO -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+        <!-- Promo banner si existe -->
+        <div id="client-promo-banner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3 text-amber-900 text-xs font-bold flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+          <span id="client-promo-text">10% OFF abonando por transferencia</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <i data-lucide="calculator" class="w-3.5 h-3.5 text-slate-400"></i>
+            Anotá o calculá el monto a pagar
+          </h3>
+          <span id="client-calc-discount-pill" class="hidden text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full"></span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Monto en ticket $</label>
+            <input type="number" id="client-calc-amount" placeholder="Ej: 5000" min="0" step="any"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Monto a transferir</label>
+            <div class="flex items-center gap-1.5">
+              <div id="client-calc-final" class="flex-grow px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm font-black text-slate-900 truncate">
+                $0
+              </div>
+              <button id="client-calc-copy-btn" type="button" class="p-2.5 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700 transition-colors" title="Copiar monto">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTÓN GIGANTE DE WHATSAPP ("CERO AGENDA") -->
+      <div id="client-wa-section" class="pt-1">
+        <a id="client-wa-btn" href="#" target="_blank" rel="noopener noreferrer" class="w-full bg-[#25D366] hover:bg-[#20ba5a] active:scale-95 text-white py-4 px-6 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/20 transition-all text-center">
+          <i data-lucide="message-circle" class="w-5 h-5 flex-shrink-0"></i>
+          <div>
+            <span class="block leading-tight">ENVIAR COMPROBANTE POR WHATSAPP</span>
+            <span class="text-[11px] font-medium text-white/90 font-normal">Sin necesidad de agendar el número del local</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Botón sutil para el dueño del local -->
+      <div class="text-center pt-2">
+        <a id="client-edit-link" href="#" class="text-xs text-slate-400 hover:text-slate-600 font-medium inline-flex items-center gap-1 underline underline-offset-2 transition-colors">
+          <i data-lucide="edit-3" class="w-3 h-3"></i>
+          ¿Sos el dueño de este local? Editar mis datos
+        </a>
+      </div>
+
+      <!-- FOOTER VIRAL DE CONVERSIÓN PARA prolijo.ar -->
+      <div class="mt-6 pt-6 border-t border-slate-200/80">
+        <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs text-center space-y-3">
+          <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700">
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>Sistema <strong>pasaDatos</strong> impulsado por <strong>prolijo.ar</strong></span>
+          </div>
+
+          <p class="text-xs text-slate-500 leading-snug">
+            La forma más rápida, prolija y gratuita de cobrar por transferencia en Argentina.
+          </p>
+
+          <div class="flex flex-col gap-2 pt-1">
+            <a href="/" class="w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all">
+              ¿Tenés un comercio o sos profesional? <strong>Creá tu cartel gratis acá</strong>
+            </a>
+            <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 text-slate-500 hover:text-slate-800 text-xs font-medium transition-colors">
+              ¿Querés automatizar tus ventas, stock o cobros? <strong>Conocé prolijo.ar</strong> →
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Script Principal de la Aplicación -->
+  <script src="js/app.js"></script>
+</body>
+</html>
