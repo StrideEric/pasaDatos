@@ -21,14 +21,23 @@
  * 'b'   : Banco o Billetera de destino (Requerido)
  * 'w'   : WhatsApp para comprobantes (Opcional, normalizado '549...')
  * 'p'   : Mensaje o Promo destacada (Opcional)
- * 'th'  : Color de Acento / Tema ('blue'|'emerald'|'violet'|'slate'|'orange')
+ * 'th'  : Color de Acento / Tema ('blue'|'emerald'|'violet'|'slate'|'orange'|HEX)
  * 'edit': Forzar Modo Creador / Edición ('1')
  * =========================================================================
  */
 
-// Constantes de Seguridad y Temas
-const ALLOWED_THEMES = ['blue', 'emerald', 'violet', 'slate', 'orange'];
-const UPDATE_COOLDOWN_MS = 60000; // 60 segundos (1 minuto) de Rate Limit
+// Paleta de temas predeterminados
+const PRESET_THEMES = {
+  blue: { hex: '#2563EB', name: 'Azul' },
+  emerald: { hex: '#059669', name: 'Esmeralda' },
+  violet: { hex: '#7C3AED', name: 'Violeta' },
+  slate: { hex: '#0F172A', name: 'Negro' },
+  orange: { hex: '#EA580C', name: 'Naranja' }
+};
+const ALLOWED_THEMES = Object.keys(PRESET_THEMES);
+
+// Constantes de Rate Limit y LocalStorage
+const UPDATE_COOLDOWN_MS = 60000; // 60 segundos (1 minuto)
 const STORAGE_CONFIG_KEY = 'pasadatos_config';
 const STORAGE_LAST_UPDATE_KEY = 'pasadatos_last_qr_update';
 
@@ -52,16 +61,114 @@ let currentPreviewTab = 'poster'; // 'poster' o 'mobile'
 let updateCooldownTimer = null;
 
 // =========================================================================
-// FUNCIONES DE SEGURIDAD Y SANITIZACIÓN (PENTEST & DEFENSE-IN-DEPTH)
+// FUNCIONES DE SEGURIDAD, COLOR Y SANITIZACIÓN (PENTEST & DEFENSE-IN-DEPTH)
 // =========================================================================
 
 /**
- * Valida y sanitiza el tema visual contra lista blanca permitida
+ * Parsea un color en formato HEX (#RGB, #RRGGBB, RGB, RRGGBB) o RGB a componentes { r, g, b, hex }
+ */
+function parseColor(input) {
+  if (!input) return null;
+  const str = String(input).trim();
+
+  // Hex (#FFF o #FFFFFF o FFF o FFFFFF)
+  const hexMatch = str.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    let hex = hexMatch[1];
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    const num = parseInt(hex, 16);
+    return {
+      r: (num >> 16) & 255,
+      g: (num >> 8) & 255,
+      b: num & 255,
+      hex: '#' + hex.toUpperCase()
+    };
+  }
+
+  // RGB: rgb(r, g, b)
+  const rgbMatch = str.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
+  if (rgbMatch) {
+    const r = Math.min(255, parseInt(rgbMatch[1], 10));
+    const g = Math.min(255, parseInt(rgbMatch[2], 10));
+    const b = Math.min(255, parseInt(rgbMatch[3], 10));
+    const toHex = (n) => n.toString(16).padStart(2, '0').toUpperCase();
+    return { r, g, b, hex: '#' + toHex(r) + toHex(g) + toHex(b) };
+  }
+
+  return null;
+}
+
+/**
+ * Valida y sanitiza el tema visual. Permite nombres predefinidos o colores HEX válidos
  */
 function sanitizeTheme(theme) {
   if (typeof theme !== 'string') return 'blue';
-  const clean = theme.trim().toLowerCase();
-  return ALLOWED_THEMES.includes(clean) ? clean : 'blue';
+  const clean = theme.trim();
+  if (ALLOWED_THEMES.includes(clean.toLowerCase())) {
+    return clean.toLowerCase();
+  }
+  const parsed = parseColor(clean);
+  if (parsed) {
+    return parsed.hex.slice(1); // Guarda hex sin '#' en URL/estado
+  }
+  return 'blue';
+}
+
+/**
+ * Aplica dinámicamente el tema visual (preset o color HEX/RGB libre) sobre un elemento
+ */
+function applyThemeColor(element, themeValue) {
+  if (!element) return;
+  const theme = sanitizeTheme(themeValue);
+
+  if (ALLOWED_THEMES.includes(theme)) {
+    element.setAttribute('data-theme', theme);
+    element.style.removeProperty('--theme-primary');
+    element.style.removeProperty('--theme-dark');
+    element.style.removeProperty('--theme-light');
+    element.style.removeProperty('--theme-border');
+    element.style.removeProperty('--theme-gradient');
+    element.style.removeProperty('--theme-badge-bg');
+    element.style.removeProperty('--theme-badge-text');
+    element.style.removeProperty('--theme-ring');
+    return;
+  }
+
+  const parsed = parseColor(theme);
+  if (!parsed) {
+    element.setAttribute('data-theme', 'blue');
+    return;
+  }
+
+  const { r, g, b, hex } = parsed;
+  const darkR = Math.round(r * 0.7);
+  const darkG = Math.round(g * 0.7);
+  const darkB = Math.round(b * 0.7);
+  const darkHex = `rgb(${darkR}, ${darkG}, ${darkB})`;
+
+  const lightR = Math.round(r + (255 - r) * 0.93);
+  const lightG = Math.round(g + (255 - g) * 0.93);
+  const lightB = Math.round(b + (255 - b) * 0.93);
+  const lightHex = `rgb(${lightR}, ${lightG}, ${lightB})`;
+
+  const borderR = Math.round(r + (255 - r) * 0.75);
+  const borderG = Math.round(g + (255 - g) * 0.75);
+  const borderB = Math.round(b + (255 - b) * 0.75);
+  const borderHex = `rgb(${borderR}, ${borderG}, ${borderB})`;
+
+  const gradient = `linear-gradient(135deg, ${darkHex} 0%, ${hex} 50%, rgb(${Math.min(255, r + 25)}, ${Math.min(255, g + 25)}, ${Math.min(255, b + 25)}) 100%)`;
+
+  element.removeAttribute('data-theme');
+  element.style.setProperty('--theme-primary', hex);
+  element.style.setProperty('--theme-dark', darkHex);
+  element.style.setProperty('--theme-light', lightHex);
+  element.style.setProperty('--theme-border', borderHex);
+  element.style.setProperty('--theme-gradient', gradient);
+  element.style.setProperty('--theme-badge-bg', lightHex);
+  element.style.setProperty('--theme-badge-text', darkHex);
+  element.style.setProperty('--theme-ring', `rgba(${r}, ${g}, ${b}, 0.25)`);
 }
 
 /**
@@ -70,7 +177,7 @@ function sanitizeTheme(theme) {
 function sanitizeInput(val, maxLength = 100) {
   if (val === null || val === undefined) return '';
   const str = String(val)
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Eliminar caracteres de control ASCII
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
     .trim();
   return str.slice(0, maxLength);
 }
@@ -95,7 +202,6 @@ function isValidWhatsApp(num) {
 
 /**
  * Normaliza número de teléfono de Argentina al formato internacional '549...'
- * Remueve 0 de prefijo de área y 15 de celular para que funcione sin agendar en wa.me
  */
 function normalizeArgentinaWhatsApp(input) {
   if (!input) return '';
@@ -111,7 +217,6 @@ function normalizeArgentinaWhatsApp(input) {
   }
   if (digits.startsWith('0')) digits = digits.slice(1);
 
-  // Casos comunes de 15 insertado en Argentina (CABA 11, o códigos de 3/4 dígitos)
   if (digits.startsWith('11') && digits.length >= 10 && digits.slice(2, 4) === '15') {
     digits = '11' + digits.slice(4);
   } else if (digits.length >= 11 && digits.slice(3, 5) === '15') {
@@ -131,7 +236,7 @@ function normalizeArgentinaWhatsApp(input) {
 function formatWhatsAppDisplay(raw) {
   const norm = normalizeArgentinaWhatsApp(raw);
   if (!norm || norm.length < 11) return raw || '';
-  const withoutCountry = norm.slice(3); // e.g. 1134859201 o 3624000000
+  const withoutCountry = norm.slice(3);
   if (withoutCountry.startsWith('11')) {
     return `+54 9 11 ${withoutCountry.slice(2, 6)}-${withoutCountry.slice(6)}`;
   }
@@ -195,7 +300,7 @@ function showToast(message, type = 'success', duration = 3000) {
   icon.className = 'w-5 h-5 flex-shrink-0';
 
   const textSpan = document.createElement('span');
-  textSpan.textContent = String(message); // Previene inyección HTML
+  textSpan.textContent = String(message);
 
   toast.appendChild(icon);
   toast.appendChild(textSpan);
@@ -277,7 +382,6 @@ function updateQRCode() {
     posterImg.src = qrDataUrl;
   }
 
-  // Sincronizar el contenedor de impresión estricto
   syncPrintStage();
 }
 
@@ -371,15 +475,32 @@ function populateFormFields() {
   setVal('input-whatsapp', appState.w);
   setVal('input-promo', appState.p);
 
-  // Selector de tema activo
-  document.querySelectorAll('.theme-option').forEach(btn => {
-    const theme = btn.getAttribute('data-theme-value');
-    if (theme === appState.th) {
-      btn.classList.add('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
-    } else {
+  // Sincronizar colores en controles
+  const colorPicker = document.getElementById('input-theme-color-picker');
+  const customColorInput = document.getElementById('input-custom-color-text');
+
+  if (ALLOWED_THEMES.includes(appState.th)) {
+    document.querySelectorAll('.theme-option').forEach(btn => {
+      const theme = btn.getAttribute('data-theme-value');
+      if (theme === appState.th) {
+        btn.classList.add('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
+      } else {
+        btn.classList.remove('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
+      }
+    });
+    const presetHex = PRESET_THEMES[appState.th].hex;
+    if (colorPicker) colorPicker.value = presetHex;
+    if (customColorInput) customColorInput.value = presetHex;
+  } else {
+    document.querySelectorAll('.theme-option').forEach(btn => {
       btn.classList.remove('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
+    });
+    const parsed = parseColor(appState.th);
+    if (parsed) {
+      if (colorPicker) colorPicker.value = parsed.hex;
+      if (customColorInput) customColorInput.value = parsed.hex;
     }
-  });
+  }
 
   updateCbuValidationBadge();
   updateWhatsAppHint();
@@ -429,7 +550,8 @@ function renderPosterPreview() {
   const container = document.getElementById('printable-poster');
   if (!container) return;
 
-  container.setAttribute('data-theme', sanitizeTheme(appState.th));
+  // Aplicar tema (preset o color libre HEX/RGB)
+  applyThemeColor(container, appState.th);
 
   const nameEl = document.getElementById('poster-name');
   if (nameEl) nameEl.textContent = appState.n || 'Nombre de tu Comercio';
@@ -499,7 +621,7 @@ function renderMobileMockupPreview() {
   const container = document.getElementById('mobile-preview-container');
   if (!container) return;
 
-  container.setAttribute('data-theme', sanitizeTheme(appState.th));
+  applyThemeColor(container, appState.th);
 
   const mName = document.getElementById('mockup-name');
   if (mName) mName.textContent = appState.n || 'Tu Comercio';
@@ -576,7 +698,7 @@ function renderClientView() {
   const clientRoot = document.getElementById('client-view');
   if (!clientRoot) return;
 
-  clientRoot.setAttribute('data-theme', sanitizeTheme(appState.th));
+  applyThemeColor(clientRoot, appState.th);
 
   const cName = document.getElementById('client-name');
   if (cName) cName.textContent = appState.n || 'Comercio';
@@ -683,7 +805,6 @@ function initClientCalculator() {
   const calcCopyBtn = document.getElementById('client-calc-copy-btn');
   if (!calcAmountInput || !calcFinalTotal) return;
 
-  // Detección segura de porcentaje en la promo (ej: "10% OFF")
   let promoDiscountPercent = 0;
   if (appState.p) {
     const match = appState.p.match(/(\d{1,2})\s*%/);
@@ -708,7 +829,6 @@ function initClientCalculator() {
       calcFinalTotal.textContent = '$0';
       return;
     }
-    // Cap máximo de 100 mil millones para evitar desbordes visuales
     const val = Math.min(100000000000, Math.max(0, rawVal));
     let total = val;
     if (promoDiscountPercent > 0) {
@@ -748,7 +868,6 @@ function handleClientCopyAlias() {
 
   copyToClipboard(appState.a, '¡Alias copiado! Abrí tu billetera y pegalo');
 
-  // Estado visual verde esmeralda activo
   btn.classList.remove('bg-theme-primary', 'hover:brightness-110');
   btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'scale-[1.02]');
   btnText.textContent = '¡ALIAS COPIADO!';
@@ -757,7 +876,6 @@ function handleClientCopyAlias() {
 
   if (window.lucide) window.lucide.createIcons();
 
-  // Revertir a los 2.5 segundos
   setTimeout(() => {
     btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'scale-[1.02]');
     btn.classList.add('bg-theme-primary', 'hover:brightness-110');
@@ -979,7 +1097,14 @@ function collectFormValues() {
   appState.b = sanitizeInput(getVal('input-banco'), 40);
   appState.w = sanitizeInput(getVal('input-whatsapp'), 25);
   appState.p = sanitizeInput(getVal('input-promo'), 120);
-  appState.th = sanitizeTheme(appState.th);
+
+  const customColorInput = document.getElementById('input-custom-color-text');
+  if (customColorInput && customColorInput.value.trim()) {
+    const parsed = parseColor(customColorInput.value.trim());
+    if (parsed) {
+      appState.th = parsed.hex.slice(1);
+    }
+  }
 }
 
 /**
@@ -999,7 +1124,7 @@ function handleUpdateQRClick() {
     }
   }
 
-  // 1. Recoger valores actuales de los inputs
+  // 1. Recoger valores directamente de los inputs
   collectFormValues();
 
   // 2. Persistir en localStorage
@@ -1008,15 +1133,30 @@ function handleUpdateQRClick() {
   // 3. Registrar marca temporal para el rate limit
   localStorage.setItem(STORAGE_LAST_UPDATE_KEY, now.toString());
 
-  // 4. Regenerar el código QR y vistas
-  updateQRCode();
+  // 4. Regenerar cartel y código QR inmediatamente
   renderPosterPreview();
   renderMobileMockupPreview();
+  updateQRCode();
 
-  // 5. Iniciar temporizador de cooldown de 60 segundos
+  // 5. Animación de confirmación visual en el cartel
+  const poster = document.getElementById('printable-poster');
+  if (poster) {
+    poster.classList.add('ring-4', 'ring-blue-500', 'transition-all');
+    setTimeout(() => poster.classList.remove('ring-4', 'ring-blue-500'), 1000);
+
+    // En dispositivos móviles, cambiar a la pestaña de cartel y hacer scroll suave
+    if (currentPreviewTab !== 'poster') {
+      switchPreviewTab('poster');
+    }
+    if (window.innerWidth < 1024) {
+      poster.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // 6. Iniciar temporizador de cooldown de 60 segundos
   setUpdateCooldown(60);
 
-  // 6. Notificación visual al usuario
+  // 7. Notificación visual al usuario
   showToast('✓ Datos y código QR actualizados con éxito', 'success');
 }
 
@@ -1036,7 +1176,6 @@ function bindInputEvents() {
       appState[key] = val;
       saveStateToStorage();
 
-      // Actualizar la vista tipográfica en tiempo real
       if (currentPreviewTab === 'poster') {
         renderPosterPreview();
       } else {
@@ -1064,7 +1203,7 @@ function bindInputEvents() {
     updateQrBtn.addEventListener('click', handleUpdateQRClick);
   }
 
-  // Selector de Temas
+  // Selector de Temas predeterminados
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const selectedTheme = sanitizeTheme(btn.getAttribute('data-theme-value'));
@@ -1076,10 +1215,55 @@ function bindInputEvents() {
       });
       btn.classList.add('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
 
+      const colorPicker = document.getElementById('input-theme-color-picker');
+      const customColorInput = document.getElementById('input-custom-color-text');
+      const hex = PRESET_THEMES[selectedTheme].hex;
+      if (colorPicker) colorPicker.value = hex;
+      if (customColorInput) customColorInput.value = hex;
+
       renderPosterPreview();
       renderMobileMockupPreview();
     });
   });
+
+  // Selector de Color Personalizado (Picker nativo)
+  const colorPicker = document.getElementById('input-theme-color-picker');
+  const customColorInput = document.getElementById('input-custom-color-text');
+
+  if (colorPicker) {
+    colorPicker.addEventListener('input', (e) => {
+      const hex = e.target.value.toUpperCase();
+      if (customColorInput) customColorInput.value = hex;
+      appState.th = hex.slice(1);
+      saveStateToStorage();
+
+      document.querySelectorAll('.theme-option').forEach(b => {
+        b.classList.remove('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
+      });
+
+      renderPosterPreview();
+      renderMobileMockupPreview();
+    });
+  }
+
+  // Campo de texto de Color Personalizado (Hex / RGB)
+  if (customColorInput) {
+    customColorInput.addEventListener('input', (e) => {
+      const parsed = parseColor(e.target.value);
+      if (parsed) {
+        if (colorPicker) colorPicker.value = parsed.hex;
+        appState.th = parsed.hex.slice(1);
+        saveStateToStorage();
+
+        document.querySelectorAll('.theme-option').forEach(b => {
+          b.classList.remove('ring-4', 'ring-offset-2', 'ring-slate-900', 'scale-105');
+        });
+
+        renderPosterPreview();
+        renderMobileMockupPreview();
+      }
+    });
+  }
 
   // Píldoras rápidas de Banco / Billetera
   document.querySelectorAll('.bank-quick-pill').forEach(pill => {
@@ -1098,6 +1282,26 @@ function bindInputEvents() {
       }
     });
   });
+
+  // Botón "+ Otro..." para ingresar banco libremente
+  const btnBankOther = document.getElementById('btn-bank-other');
+  if (btnBankOther) {
+    btnBankOther.addEventListener('click', () => {
+      const input = document.getElementById('input-banco');
+      if (input) {
+        input.value = '';
+        input.placeholder = 'Escribí el nombre de tu banco o billetera...';
+        input.focus();
+        appState.b = '';
+        saveStateToStorage();
+        if (currentPreviewTab === 'poster') {
+          renderPosterPreview();
+        } else {
+          renderMobileMockupPreview();
+        }
+      }
+    });
+  }
 
   // Botón para resetear a datos de ejemplo
   const resetBtn = document.getElementById('btn-reset-demo');
@@ -1239,16 +1443,13 @@ function initRouter() {
   const hasName = searchParams.has('n') && searchParams.get('n').trim().length > 0;
 
   if (isEdit) {
-    // Modo Edición forzado desde URL
     loadStateFromParams(searchParams);
     saveStateToStorage();
     showCreatorView();
   } else if (hasAlias || hasName) {
-    // Modo Cliente directo por link o escaneo de QR
     loadStateFromParams(searchParams);
     showClientView();
   } else {
-    // Modo Creador
     loadStateFromStorage();
     showCreatorView();
   }

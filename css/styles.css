@@ -229,6 +229,90 @@ body {
 }
 
 /* ==========================================================================
+   Crédito Desarrollado por prolijo.ar (Estilo HexaTek / Prolijo)
+   ========================================================================== */
+.prolijo-footer {
+  width: 100%;
+  background: #0f172a;
+  color: #ffffff;
+  font-family: inherit;
+}
+
+.prolijo-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 24px 0;
+  font-size: 13px;
+}
+
+.prolijo-footer-bottom p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.prolijo-footer-bottom strong {
+  color: #ffffff;
+}
+
+.prolijo-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 30px;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.prolijo-credit:hover {
+  color: #00CFE8;
+  border-color: #00CFE8;
+  background: rgba(0, 207, 232, 0.08);
+  box-shadow: 0 0 15px rgba(0, 207, 232, 0.2);
+}
+
+.prolijo-credit span.arrow {
+  color: #00CFE8;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Versión clara para Modo Cliente */
+.prolijo-credit-light {
+  border-color: #cbd5e1;
+  color: #334155;
+  background: #ffffff;
+}
+
+.prolijo-credit-light:hover {
+  color: #008fa3;
+  border-color: #008fa3;
+  background: #f0fdfa;
+}
+
+.prolijo-credit-light span.arrow {
+  color: #008fa3;
+}
+
+@media (max-width: 640px) {
+  .prolijo-footer-bottom {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+}
+
+/* ==========================================================================
    REGLAS ESTRICTAS DE IMPRESIÓN (@media print)
    Garantiza que al tocar Imprimir salga exclusivamente el cartel en A4 o A5
    con colores de fondo exactos, sin márgenes residuales ni elementos web.

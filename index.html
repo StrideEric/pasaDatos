@@ -204,6 +204,7 @@
                   <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Brubank">Brubank</button>
                   <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Ualá">Ualá</button>
                   <button type="button" class="bank-quick-pill text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors" data-bank="Naranja X">Naranja X</button>
+                  <button type="button" id="btn-bank-other" class="text-xs px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg border border-blue-200 transition-colors" title="Escribir otro banco o billetera">+ Otro...</button>
                 </div>
 
                 <div class="relative">
@@ -359,6 +360,23 @@
                 <span class="w-7 h-7 rounded-full bg-orange-600 shadow-xs"></span>
                 <span class="text-[11px] font-semibold text-slate-700">Naranja</span>
               </button>
+            </div>
+
+            <!-- Selector de Color Personalizado (Hex / RGB / Color Picker) -->
+            <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <label for="input-custom-color-text" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Color Personalizado (HEX o RGB)
+                </label>
+                <p class="text-[11px] text-slate-400">Elegí cualquier tono o pegá tu código hexadecimal / RGB</p>
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative flex items-center">
+                  <input type="color" id="input-theme-color-picker" value="#2563eb" class="w-10 h-10 rounded-xl cursor-pointer border border-slate-300 p-0.5 bg-white shadow-xs" title="Abrir selector de color">
+                </div>
+                <input type="text" id="input-custom-color-text" placeholder="#2563EB" maxlength="25"
+                  class="w-full sm:w-36 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
             </div>
           </div>
 
@@ -621,63 +639,146 @@
           <!-- Decoración visual -->
           <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
 
-          <div class="max-w-3xl mb-10 relative z-10">
-            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-950/80 px-3 py-1 rounded-full border border-blue-800 mb-3">
-              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <div class="max-w-3xl mb-8 relative z-10">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-cyan-400 bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-800 mb-3">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cyan-400"></i>
               Impulsado por prolijo.ar
             </span>
             <h2 class="text-2xl sm:text-4xl font-black tracking-tight font-display text-white">
-              ¿Tu negocio creció y necesitás ir un paso más allá?
+              Qué hacemos — elegí tu problema →
             </h2>
             <p class="text-slate-300 text-sm sm:text-base mt-2.5 leading-relaxed">
-              <strong>pasaDatos</strong> resuelve tu cobro diario en el mostrador. En <strong>prolijo.ar</strong> ayudamos a comercios, distribuidoras y pymes argentinas a ordenar su operación y multiplicar ventas con tecnología simple.
+              En <strong>prolijo.ar</strong> creamos soluciones a medida para ordenar tu operación, ahorrar tiempo y hacer crecer tu negocio sin complicaciones.
             </p>
           </div>
 
-          <!-- 3 Tarjetas de Servicios B2B -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-10">
-            <!-- Servicio 1: POS & Stock -->
-            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl hover:border-blue-500/50 transition-all group">
-              <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <i data-lucide="boxes" class="w-6 h-6"></i>
+          <!-- 6 Tarjetas de Servicios B2B (Sin precios) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 relative z-10 mb-10">
+            
+            <!-- 1. Sistemas de turnos a medida -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/80 p-5 sm:p-6 rounded-2xl hover:border-cyan-400/50 transition-all group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-800/50">Turnos</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-white mb-2 font-display">Sistemas de turnos a medida</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Tu agenda, ordenada. Reservas por WhatsApp o web, recordatorios automáticos y una vista clara del día, hecha para tu rubro.
+                </p>
               </div>
-              <h3 class="text-lg font-bold text-white mb-2 font-display">Punto de Venta (POS) y Stock</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Controlá tu caja diaria, listas de precios mayorista/minorista e inventario en tiempo real sin planillas rotas ni errores de cobro.
-              </p>
+              <div class="pt-3 border-t border-slate-700/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                CONSULTORIOS, PELUQUERÍAS, TALLERES, SERVICIOS…
+              </div>
             </div>
 
-            <!-- Servicio 2: WhatsApp Automatizado -->
-            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl hover:border-emerald-500/50 transition-all group">
-              <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <i data-lucide="bot" class="w-6 h-6"></i>
+            <!-- 2. Chatbots de WhatsApp -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/80 p-5 sm:p-6 rounded-2xl hover:border-emerald-400/50 transition-all group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/50">WhatsApp</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-white mb-2 font-display">Chatbots de WhatsApp</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Respondé al instante, 24/7: turnos, consultas y pedidos resueltos sin que nadie mire el teléfono a cada rato.
+                </p>
               </div>
-              <h3 class="text-lg font-bold text-white mb-2 font-display">Automatización de WhatsApp</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Bots que responden listas de precios las 24hs, toman pedidos de clientes y validan comprobantes de transferencia automáticamente.
-              </p>
+              <div class="pt-3 border-t border-slate-700/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                ATENCIÓN AUTOMÁTICA QUE SUENA COMO VOS
+              </div>
             </div>
 
-            <!-- Servicio 3: Microsistemas a Medida -->
-            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl hover:border-purple-500/50 transition-all group">
-              <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <i data-lucide="code" class="w-6 h-6"></i>
+            <!-- 3. Automatización de flujos de trabajo -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/80 p-5 sm:p-6 rounded-2xl hover:border-purple-400/50 transition-all group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="workflow" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-purple-400 bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-800/50">Procesos</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-white mb-2 font-display">Automatización de flujos de trabajo</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Lo que hoy hacés a mano, que lo haga el sistema: conectar tus herramientas, mover datos y disparar tareas solas.
+                </p>
               </div>
-              <h3 class="text-lg font-bold text-white mb-2 font-display">Microsistemas a Medida</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Herramientas rápidas y paneles internos diseñados para la realidad de tu local, sin contratos mensuales abusivos.
-              </p>
+              <div class="pt-3 border-t border-slate-700/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                CONECTAMOS LO QUE YA USÁS
+              </div>
             </div>
+
+            <!-- 4. Landing pages corporativas -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/80 p-5 sm:p-6 rounded-2xl hover:border-blue-400/50 transition-all group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="globe" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-800/50">Web</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-white mb-2 font-display">Landing pages corporativas</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Una página prolija y profesional que presenta tu negocio, convierte visitas y sale a la luz en días.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-700/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                TU CARA ONLINE, SIN VUELTAS
+              </div>
+            </div>
+
+            <!-- 5. Tableros de control -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/80 p-5 sm:p-6 rounded-2xl hover:border-amber-400/50 transition-all group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-800/50">Métricas</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-white mb-2 font-display">Tableros de control</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Ventas, stock, turnos y métricas en un solo lugar. Sabé cómo te fue el mes sin abrir cien archivos.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-700/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                NÚMEROS CLAROS PARA DECIDIR
+              </div>
+            </div>
+
+            <!-- 6. Consultoría y soluciones a medida -->
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/80 p-5 sm:p-6 rounded-2xl hover:border-rose-400/50 transition-all group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-md border border-rose-800/50">A medida</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-white mb-2 font-display">Consultoría y soluciones a medida</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  ¿Tu problema no está en la lista? Lo analizamos y armamos la solución puntual que tu negocio necesita.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-700/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                INTEGRAMOS O CREAMOS DE CERO
+              </div>
+            </div>
+
           </div>
 
-          <!-- CTA Final hacia prolijo.ar -->
+          <!-- CTA Final hacia https://prolijo.ar/contacto -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-800 relative z-10">
             <div class="text-xs text-slate-400 text-center sm:text-left">
-              Charlá directamente con nuestro equipo de desarrollo e ingeniería en Argentina.
+              Hablemos sin compromiso sobre el circuito y los cuellos de botella de tu negocio.
             </div>
-            <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-6 py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-blue-600/30">
-              <span>Conocé más soluciones en prolijo.ar</span>
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            <a href="https://prolijo.ar/contacto" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold px-6 py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-cyan-500/20">
+              <span>Cotizar el mío</span>
+              <span aria-hidden="true">↗</span>
             </a>
           </div>
 
@@ -686,11 +787,24 @@
 
     </main>
 
-    <!-- Footer General -->
-    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
-      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p><strong>pasaDatos</strong> — Generador de Carteles QR & Links de Cobro en Argentina.</p>
-        <p>Diseñado y mantenido con tecnología limpia por <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="font-bold text-slate-800 hover:text-blue-600">prolijo.ar</a></p>
+    <!-- Footer General estilo Prolijo -->
+    <footer class="prolijo-footer mt-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="prolijo-footer-bottom">
+          <p>
+            © 2026 <strong>pasaDatos</strong>. Todos los derechos reservados.
+          </p>
+
+          <a
+            href="https://prolijo.ar/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="prolijo-credit"
+          >
+            Desarrollado por <strong>prolijo.ar</strong>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
     </footer>
 
@@ -868,6 +982,18 @@
             </a>
             <a href="https://prolijo.ar" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 text-slate-500 hover:text-slate-800 text-xs font-medium transition-colors">
               ¿Querés automatizar tus ventas, stock o cobros? <strong>Conocé prolijo.ar</strong> →
+            </a>
+          </div>
+
+          <div class="pt-2 flex justify-center border-t border-slate-100">
+            <a
+              href="https://prolijo.ar/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="prolijo-credit prolijo-credit-light"
+            >
+              Desarrollado por <strong>prolijo.ar</strong>
+              <span class="arrow" aria-hidden="true">↗</span>
             </a>
           </div>
         </div>
