@@ -150,17 +150,21 @@ body {
 /* Estilos de la maqueta de celular */
 .phone-mockup {
   position: relative;
-  border-radius: 42px;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 0 12px #1e293b, 0 0 0 14px #334155;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  border-radius: 36px;
+  border: 7px solid #1e293b;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.25);
   background-color: #ffffff;
   overflow: hidden;
 }
 
 .phone-mockup-speaker {
-  width: 90px;
-  height: 18px;
+  width: 80px;
+  height: 16px;
   background-color: #0f172a;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 10px 10px;
   position: absolute;
   top: 0;
   left: 50%;
@@ -168,18 +172,16 @@ body {
   z-index: 40;
 }
 
-/* Poster imprimible container */
+/* Poster imprimible container (Vista en Pantalla) */
 .printable-poster-card {
-  aspect-ratio: 1 / 1.4142; /* A4 / A5 aspect ratio */
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   position: relative;
   overflow: hidden;
 }
@@ -323,11 +325,6 @@ body {
 }
 
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 8mm;
-  }
-
   html, body {
     width: 100% !important;
     height: 100% !important;
@@ -348,7 +345,6 @@ body {
     display: block !important;
     position: relative !important;
     width: 100% !important;
-    max-width: 190mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
     box-shadow: none !important;
@@ -357,14 +353,36 @@ body {
     break-inside: avoid;
   }
 
-  #print-stage .printable-poster-card {
-    max-width: 100% !important;
+  /* Formato A5 Mostrador (148 x 210 mm) */
+  body.print-format-a5 #print-stage {
+    max-width: 136mm !important;
+  }
+
+  body.print-format-a5 #print-stage .printable-poster-card {
+    max-width: 136mm !important;
     width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 1 / 1.4142 !important;
+    min-height: 195mm !important;
     border: 1px solid #e2e8f0 !important;
-    border-radius: 16px !important;
+    border-radius: 14px !important;
     box-shadow: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Formato A4 Vidriera / Pared (210 x 297 mm) */
+  body.print-format-a4 #print-stage {
+    max-width: 194mm !important;
+  }
+
+  body.print-format-a4 #print-stage .printable-poster-card {
+    max-width: 194mm !important;
+    width: 100% !important;
+    min-height: 278mm !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 18px !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* Asegurar que las imágenes y textos sean nítidos */

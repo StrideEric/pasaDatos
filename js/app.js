@@ -59,6 +59,7 @@ let appState = { ...DEFAULT_STATE };
 let isCreatorMode = true;
 let currentPreviewTab = 'poster'; // 'poster' o 'mobile'
 let updateCooldownTimer = null;
+let selectedPrintFormat = 'a5'; // 'a5' o 'a4'
 
 // =========================================================================
 // FUNCIONES DE SEGURIDAD, COLOR Y SANITIZACIÓN (PENTEST & DEFENSE-IN-DEPTH)
@@ -371,34 +372,48 @@ function generateQRDataURL(url, size = 600) {
 }
 
 /**
- * Actualiza el código QR en la vista de cartel y sincroniza el print-stage
+ * Actualiza el código QR en la vista de cartel (Modo Creador)
  */
 function updateQRCode() {
   const shareUrl = buildShareUrl(appState);
   const qrDataUrl = generateQRDataURL(shareUrl, 600);
 
-  const posterImg = document.getElementById('poster-qr-img');
+  const container = document.getElementById('printable-poster');
+  const posterImg = container ? container.querySelector('#poster-qr-img') : document.getElementById('poster-qr-img');
   if (posterImg && qrDataUrl) {
     posterImg.src = qrDataUrl;
   }
-
-  syncPrintStage();
 }
 
 /**
- * Sincroniza el elemento para impresión física (@media print)
+ * Sincroniza el elemento para impresión física (@media print) evitando colisión de IDs
  */
-function syncPrintStage() {
+function syncPrintStage(format = selectedPrintFormat) {
   const printStage = document.getElementById('print-stage');
   const posterElem = document.getElementById('printable-poster');
   if (!printStage || !posterElem) return;
 
   printStage.innerHTML = '';
   const clone = posterElem.cloneNode(true);
-  clone.id = 'printable-poster-clone';
+  clone.id = 'printable-poster-print-clone';
+  // Renombrar IDs internos para evitar colisiones con el DOM visible
+  clone.querySelectorAll('[id]').forEach((el) => {
+    el.id = 'print-clone-' + el.id;
+  });
   printStage.appendChild(clone);
 
   if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * Limpia el print-stage y remueve clases de impresión temporales
+ */
+function clearPrintStage() {
+  const printStage = document.getElementById('print-stage');
+  if (printStage) printStage.innerHTML = '';
+  document.body.classList.remove('print-format-a5', 'print-format-a4');
+  const dynamicStyle = document.getElementById('dynamic-print-page-style');
+  if (dynamicStyle) dynamicStyle.remove();
 }
 
 /**
@@ -553,10 +568,10 @@ function renderPosterPreview() {
   // Aplicar tema (preset o color libre HEX/RGB)
   applyThemeColor(container, appState.th);
 
-  const nameEl = document.getElementById('poster-name');
+  const nameEl = container.querySelector('#poster-name');
   if (nameEl) nameEl.textContent = appState.n || 'Nombre de tu Comercio';
 
-  const rubroEl = document.getElementById('poster-rubro');
+  const rubroEl = container.querySelector('#poster-rubro');
   if (rubroEl) {
     if (appState.r && appState.r.trim()) {
       rubroEl.textContent = appState.r.trim();
@@ -566,17 +581,17 @@ function renderPosterPreview() {
     }
   }
 
-  const aliasEl = document.getElementById('poster-alias');
+  const aliasEl = container.querySelector('#poster-alias');
   if (aliasEl) aliasEl.textContent = appState.a || 'TU.ALIAS.AQUI';
 
-  const bancoEl = document.getElementById('poster-banco');
+  const bancoEl = container.querySelector('#poster-banco');
   if (bancoEl) bancoEl.textContent = appState.b || 'Tu Banco o Billetera';
 
-  const titularEl = document.getElementById('poster-titular');
+  const titularEl = container.querySelector('#poster-titular');
   if (titularEl) titularEl.textContent = appState.t || 'Nombre del Titular';
 
-  const cuitWrapper = document.getElementById('poster-cuit-wrapper');
-  const cuitEl = document.getElementById('poster-cuit');
+  const cuitWrapper = container.querySelector('#poster-cuit-wrapper');
+  const cuitEl = container.querySelector('#poster-cuit');
   if (cuitWrapper && cuitEl) {
     if (appState.u && appState.u.trim()) {
       cuitEl.textContent = appState.u.trim();
@@ -586,8 +601,8 @@ function renderPosterPreview() {
     }
   }
 
-  const cbuWrapper = document.getElementById('poster-cbu-wrapper');
-  const cbuEl = document.getElementById('poster-cbu');
+  const cbuWrapper = container.querySelector('#poster-cbu-wrapper');
+  const cbuEl = container.querySelector('#poster-cbu');
   if (cbuWrapper && cbuEl) {
     if (appState.c && appState.c.trim()) {
       cbuEl.textContent = appState.c.trim();
@@ -599,8 +614,8 @@ function renderPosterPreview() {
 
   // Promo en Cartel: Solo se muestra si fue cargada
   const hasPromo = Boolean(appState.p && appState.p.trim().length > 0);
-  const promoWrapper = document.getElementById('poster-promo-wrapper');
-  const promoEl = document.getElementById('poster-promo');
+  const promoWrapper = container.querySelector('#poster-promo-wrapper');
+  const promoEl = container.querySelector('#poster-promo');
   if (promoWrapper && promoEl) {
     if (hasPromo) {
       promoEl.textContent = appState.p.trim();
@@ -609,9 +624,6 @@ function renderPosterPreview() {
       promoWrapper.classList.add('hidden');
     }
   }
-
-  // Sincronizar el nodo de impresión estricta
-  syncPrintStage();
 }
 
 /**
@@ -623,10 +635,10 @@ function renderMobileMockupPreview() {
 
   applyThemeColor(container, appState.th);
 
-  const mName = document.getElementById('mockup-name');
+  const mName = container.querySelector('#mockup-name');
   if (mName) mName.textContent = appState.n || 'Tu Comercio';
 
-  const mRubro = document.getElementById('mockup-rubro');
+  const mRubro = container.querySelector('#mockup-rubro');
   if (mRubro) {
     if (appState.r && appState.r.trim()) {
       mRubro.textContent = appState.r.trim();
@@ -636,17 +648,17 @@ function renderMobileMockupPreview() {
     }
   }
 
-  const mBanco = document.getElementById('mockup-banco');
+  const mBanco = container.querySelector('#mockup-banco');
   if (mBanco) mBanco.textContent = appState.b || 'Billetera Digital';
 
-  const mAlias = document.getElementById('mockup-alias');
+  const mAlias = container.querySelector('#mockup-alias');
   if (mAlias) mAlias.textContent = appState.a || 'TU.ALIAS';
 
-  const mTitular = document.getElementById('mockup-titular');
+  const mTitular = container.querySelector('#mockup-titular');
   if (mTitular) mTitular.textContent = appState.t || 'Titular de la Cuenta';
 
-  const mCuitRow = document.getElementById('mockup-cuit-row');
-  const mCuit = document.getElementById('mockup-cuit');
+  const mCuitRow = container.querySelector('#mockup-cuit-row');
+  const mCuit = container.querySelector('#mockup-cuit');
   if (mCuitRow && mCuit) {
     if (appState.u && appState.u.trim()) {
       mCuit.textContent = appState.u.trim();
@@ -656,8 +668,8 @@ function renderMobileMockupPreview() {
     }
   }
 
-  const mCbuRow = document.getElementById('mockup-cbu-row');
-  const mCbu = document.getElementById('mockup-cbu');
+  const mCbuRow = container.querySelector('#mockup-cbu-row');
+  const mCbu = container.querySelector('#mockup-cbu');
   if (mCbuRow && mCbu) {
     if (appState.c && appState.c.trim()) {
       mCbu.textContent = appState.c.trim();
@@ -669,8 +681,8 @@ function renderMobileMockupPreview() {
 
   // Promo en Maqueta: Solo se muestra si fue cargada
   const hasPromo = Boolean(appState.p && appState.p.trim().length > 0);
-  const mPromoRow = document.getElementById('mockup-promo-row');
-  const mPromo = document.getElementById('mockup-promo');
+  const mPromoRow = container.querySelector('#mockup-promo-row');
+  const mPromo = container.querySelector('#mockup-promo');
   if (mPromoRow && mPromo) {
     if (hasPromo) {
       mPromo.textContent = appState.p.trim();
@@ -680,7 +692,7 @@ function renderMobileMockupPreview() {
     }
   }
 
-  const mWaBtn = document.getElementById('mockup-wa-btn');
+  const mWaBtn = container.querySelector('#mockup-wa-btn');
   if (mWaBtn) {
     if (appState.w && appState.w.trim()) {
       mWaBtn.classList.remove('hidden');
@@ -920,24 +932,90 @@ function switchPreviewTab(tab) {
 }
 
 /**
- * Disparador nativo de Impresión de Cartel
+ * Modifica el formato activo de impresión / imagen (A5 o A4)
  */
-function printPoster() {
-  syncPrintStage();
+function setPrintFormat(format) {
+  if (format !== 'a4' && format !== 'a5') return;
+  selectedPrintFormat = format;
+
+  const btnA5 = document.getElementById('format-btn-a5');
+  const btnA4 = document.getElementById('format-btn-a4');
+  const printLabel = document.getElementById('btn-print-pdf-label');
+  const printSub = document.getElementById('btn-print-pdf-sub');
+  const imgLabel = document.getElementById('btn-download-image-label');
+  const imgSub = document.getElementById('btn-download-image-sub');
+
+  if (format === 'a5') {
+    if (btnA5) {
+      btnA5.className = 'format-pill flex-1 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all bg-white text-slate-900 shadow-xs';
+    }
+    if (btnA4) {
+      btnA4.className = 'format-pill flex-1 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-slate-900';
+    }
+    if (printLabel) printLabel.textContent = 'Imprimir / PDF (A5)';
+    if (printSub) printSub.textContent = 'Acrílico Mostrador (14.8×21 cm)';
+    if (imgLabel) imgLabel.textContent = 'Descargar Imagen (A5 HD)';
+    if (imgSub) imgSub.textContent = 'Acrílico Mostrador (14.8×21 cm)';
+  } else {
+    if (btnA4) {
+      btnA4.className = 'format-pill flex-1 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all bg-white text-slate-900 shadow-xs';
+    }
+    if (btnA5) {
+      btnA5.className = 'format-pill flex-1 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-slate-900';
+    }
+    if (printLabel) printLabel.textContent = 'Imprimir / PDF (A4)';
+    if (printSub) printSub.textContent = 'Vidriera / Pared (21×29.7 cm)';
+    if (imgLabel) imgLabel.textContent = 'Descargar Imagen (A4 HD)';
+    if (imgSub) imgSub.textContent = 'Vidriera / Pared (21×29.7 cm)';
+  }
+}
+
+/**
+ * Disparador nativo de Impresión de Cartel (soporta formato A5 o A4)
+ */
+function printPoster(format = selectedPrintFormat) {
+  const effectiveFormat = (format === 'a4' || format === 'a5') ? format : selectedPrintFormat;
+
+  // Asignar clase de formato al body para activar las reglas CSS @media print
+  document.body.classList.remove('print-format-a5', 'print-format-a4');
+  document.body.classList.add(`print-format-${effectiveFormat}`);
+
+  // Inyectar regla @page dinámica para tamaño y margen de página
+  let dynamicStyle = document.getElementById('dynamic-print-page-style');
+  if (!dynamicStyle) {
+    dynamicStyle = document.createElement('style');
+    dynamicStyle.id = 'dynamic-print-page-style';
+    document.head.appendChild(dynamicStyle);
+  }
+  const pageSize = effectiveFormat === 'a5' ? 'A5 portrait' : 'A4 portrait';
+  const pageMargin = effectiveFormat === 'a5' ? '6mm' : '8mm';
+  dynamicStyle.textContent = `@page { size: ${pageSize}; margin: ${pageMargin}; }`;
+
+  // Sincronizar el nodo de impresión clonado
+  syncPrintStage(effectiveFormat);
+
+  // Limpieza posterior al diálogo de impresión
+  const cleanup = () => {
+    clearPrintStage();
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup, { once: true });
+  setTimeout(cleanup, 4000); // Fallback por si el navegador no dispara afterprint
+
   window.print();
 }
 
 /**
- * Descarga del Cartel como imagen PNG en alta resolución mediante html2canvas
+ * Descarga del Cartel como imagen PNG en alta definición mediante html2canvas
  */
-async function downloadPosterPNG() {
+async function downloadPosterImage(format = selectedPrintFormat) {
   if (typeof html2canvas === 'undefined') {
     showToast('html2canvas no está cargado', 'info');
     return;
   }
 
   const posterElem = document.getElementById('printable-poster');
-  const downloadBtn = document.getElementById('btn-download-png');
+  const downloadBtn = document.getElementById('btn-download-image') || document.getElementById('btn-download-png');
   if (!posterElem) return;
 
   const originalBtnHTML = downloadBtn ? downloadBtn.innerHTML : '';
@@ -953,8 +1031,11 @@ async function downloadPosterPNG() {
   }
 
   try {
+    const effectiveFormat = (format === 'a4' || format === 'a5') ? format : selectedPrintFormat;
+    const scale = effectiveFormat === 'a4' ? 3 : 2.5;
+
     const canvas = await html2canvas(posterElem, {
-      scale: 3,
+      scale: scale,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false
@@ -964,14 +1045,15 @@ async function downloadPosterPNG() {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-');
-    const fileName = `cartel-pasadatos-${safeName}.png`;
+    const fileName = `cartel-pasadatos-${safeName}-${effectiveFormat}.png`;
 
     const link = document.createElement('a');
     link.download = fileName;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
-    showToast('Cartel descargado en alta definición', 'success');
+    const formatLabel = effectiveFormat === 'a4' ? 'A4 (Vidriera / Pared)' : 'A5 (Acrílico Mostrador)';
+    showToast(`✓ Imagen ${formatLabel} descargada en alta definición`, 'success');
   } catch (err) {
     console.error('Error al exportar PNG:', err);
     showToast('No se pudo generar la imagen', 'info');
@@ -983,6 +1065,9 @@ async function downloadPosterPNG() {
     }
   }
 }
+
+// Alias de retrocompatibilidad
+const downloadPosterPNG = downloadPosterImage;
 
 /**
  * Copia el link de cobro al portapapeles
@@ -1098,11 +1183,17 @@ function collectFormValues() {
   appState.w = sanitizeInput(getVal('input-whatsapp'), 25);
   appState.p = sanitizeInput(getVal('input-promo'), 120);
 
-  const customColorInput = document.getElementById('input-custom-color-text');
-  if (customColorInput && customColorInput.value.trim()) {
-    const parsed = parseColor(customColorInput.value.trim());
-    if (parsed) {
-      appState.th = parsed.hex.slice(1);
+  // Tema visual: priorizar preset si tiene ring-4 activo; si no, color personalizado
+  const activePreset = document.querySelector('.theme-option.ring-4');
+  if (activePreset) {
+    appState.th = sanitizeTheme(activePreset.getAttribute('data-theme-value'));
+  } else {
+    const customColorInput = document.getElementById('input-custom-color-text');
+    if (customColorInput && customColorInput.value.trim()) {
+      const parsed = parseColor(customColorInput.value.trim());
+      if (parsed) {
+        appState.th = parsed.hex.slice(1);
+      }
     }
   }
 }
@@ -1133,7 +1224,7 @@ function handleUpdateQRClick() {
   // 3. Registrar marca temporal para el rate limit
   localStorage.setItem(STORAGE_LAST_UPDATE_KEY, now.toString());
 
-  // 4. Regenerar cartel y código QR inmediatamente
+  // 4. Regenerar cartel, maqueta y código QR inmediatamente
   renderPosterPreview();
   renderMobileMockupPreview();
   updateQRCode();
@@ -1142,7 +1233,7 @@ function handleUpdateQRClick() {
   const poster = document.getElementById('printable-poster');
   if (poster) {
     poster.classList.add('ring-4', 'ring-blue-500', 'transition-all');
-    setTimeout(() => poster.classList.remove('ring-4', 'ring-blue-500'), 1000);
+    setTimeout(() => poster.classList.remove('ring-4', 'ring-blue-500'), 1200);
 
     // En dispositivos móviles, cambiar a la pestaña de cartel y hacer scroll suave
     if (currentPreviewTab !== 'poster') {
@@ -1157,7 +1248,7 @@ function handleUpdateQRClick() {
   setUpdateCooldown(60);
 
   // 7. Notificación visual al usuario
-  showToast('✓ Datos y código QR actualizados con éxito', 'success');
+  showToast('✓ Cartel y código QR actualizados con éxito', 'success');
 }
 
 /**
@@ -1176,11 +1267,8 @@ function bindInputEvents() {
       appState[key] = val;
       saveStateToStorage();
 
-      if (currentPreviewTab === 'poster') {
-        renderPosterPreview();
-      } else {
-        renderMobileMockupPreview();
-      }
+      renderPosterPreview();
+      renderMobileMockupPreview();
 
       if (key === 'c') updateCbuValidationBadge();
       if (key === 'w') updateWhatsAppHint();
@@ -1356,12 +1444,33 @@ function bindInputEvents() {
     tabMobileBtn.addEventListener('click', () => switchPreviewTab('mobile'));
   }
 
-  // Acciones de Exportación
+  // Selector de Formato A5 / A4
+  const btnFormatA5 = document.getElementById('format-btn-a5');
+  if (btnFormatA5) {
+    btnFormatA5.addEventListener('click', () => setPrintFormat('a5'));
+  }
+
+  const btnFormatA4 = document.getElementById('format-btn-a4');
+  if (btnFormatA4) {
+    btnFormatA4.addEventListener('click', () => setPrintFormat('a4'));
+  }
+
+  // Acciones de Exportación (Nuevos botones y retrocompatibilidad)
+  const printPdfBtn = document.getElementById('btn-print-pdf');
+  if (printPdfBtn) {
+    printPdfBtn.addEventListener('click', () => printPoster(selectedPrintFormat));
+  }
+
+  const downloadImgBtn = document.getElementById('btn-download-image');
+  if (downloadImgBtn) {
+    downloadImgBtn.addEventListener('click', () => downloadPosterImage(selectedPrintFormat));
+  }
+
   const printBtn = document.getElementById('btn-print-poster');
-  if (printBtn) printBtn.addEventListener('click', printPoster);
+  if (printBtn) printBtn.addEventListener('click', () => printPoster(selectedPrintFormat));
 
   const downloadBtn = document.getElementById('btn-download-png');
-  if (downloadBtn) downloadBtn.addEventListener('click', downloadPosterPNG);
+  if (downloadBtn) downloadBtn.addEventListener('click', () => downloadPosterImage(selectedPrintFormat));
 
   const copyLinkBtn = document.getElementById('btn-copy-link');
   if (copyLinkBtn) copyLinkBtn.addEventListener('click', copyPaymentLink);
@@ -1418,6 +1527,7 @@ function showCreatorView() {
   renderPosterPreview();
   renderMobileMockupPreview();
   initUpdateCooldown();
+  setPrintFormat('a5');
   if (window.lucide) window.lucide.createIcons();
 }
 

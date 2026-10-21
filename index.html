@@ -527,18 +527,18 @@
 
           <!-- CONTENIDO PESTAÑA 2: VISTA CELULAR DEL CLIENTE (MOCKUP) -->
           <div id="preview-view-mobile" class="hidden flex justify-center py-4">
-            <div class="phone-mockup w-full max-w-[340px] border border-slate-200 shadow-2xl relative">
+            <div class="phone-mockup border border-slate-700/30 relative">
               <div class="phone-mockup-speaker"></div>
               
               <!-- Pantalla Interna -->
-              <div id="mobile-preview-container" class="pt-8 pb-6 px-4 space-y-4 bg-slate-50 min-h-[560px] text-left" data-theme="blue">
+              <div id="mobile-preview-container" class="pt-8 pb-6 px-4 space-y-4 bg-slate-50 min-h-[540px] text-left" data-theme="blue">
                 
                 <!-- Encabezado Móvil -->
                 <div class="text-center pt-2">
                   <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full mb-1">
                     <i data-lucide="check-circle" class="w-3 h-3"></i> Verificado por el comercio
                   </span>
-                  <h4 id="mockup-name" class="text-base font-extrabold text-slate-900 font-display">Café & Deli Martínez</h4>
+                  <h4 id="mockup-name" class="text-base font-extrabold text-slate-900 font-display break-words px-2">Café & Deli Martínez</h4>
                   <p id="mockup-rubro" class="text-xs text-slate-500">Cafetería</p>
                 </div>
 
@@ -549,7 +549,7 @@
                     <span id="mockup-banco" class="font-bold text-theme-primary text-xs">Mercado Pago</span>
                   </div>
 
-                  <div id="mockup-alias" class="text-center font-mono-code font-extrabold text-lg text-slate-900 bg-slate-100 py-2 rounded-xl tracking-wider">
+                  <div id="mockup-alias" class="text-center font-mono-code font-extrabold text-sm sm:text-base text-slate-900 bg-slate-100 py-2.5 px-2 rounded-xl tracking-wider break-all select-all">
                     CAFE.MARTINEZ.MP
                   </div>
 
@@ -591,40 +591,67 @@
           </div>
 
           <!-- BOTONES DE ACCIÓN PARA EL COMERCIANTE -->
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
-              Herramientas de Exportación
-            </h4>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                Opciones de Exportación
+              </h4>
+              <span class="text-[11px] text-slate-400 font-medium">Elegí tu soporte</span>
+            </div>
+
+            <!-- Selector de Tamaño / Formato (A5 vs A4) -->
+            <div class="bg-slate-100 p-1 rounded-xl flex items-center justify-between text-xs gap-1">
+              <button type="button" id="format-btn-a5" class="format-pill flex-1 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all bg-white text-slate-900 shadow-xs" data-format="a5">
+                <i data-lucide="layout" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span>A5 Mostrador (14.8 × 21 cm)</span>
+              </button>
+              <button type="button" id="format-btn-a4" class="format-pill flex-1 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-slate-900" data-format="a4">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span>A4 Vidriera (21 × 29.7 cm)</span>
+              </button>
+            </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <!-- Imprimir Cartel / Guardar PDF -->
-              <button id="btn-print-poster" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md">
-                <i data-lucide="printer" class="w-4 h-4"></i>
-                Imprimir Cartel / PDF
+              <!-- Botón 1: Imprimir / Guardar en PDF A5 (o A4) -->
+              <button id="btn-print-pdf" type="button" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md cursor-pointer">
+                <i data-lucide="printer" class="w-4 h-4 flex-shrink-0"></i>
+                <div class="text-left">
+                  <span id="btn-print-pdf-label" class="block leading-tight font-extrabold">Imprimir / PDF (A5)</span>
+                  <span id="btn-print-pdf-sub" class="text-[10px] text-blue-100 font-normal">Acrílico Mostrador (14.8×21 cm)</span>
+                </div>
               </button>
 
-              <!-- Descargar Imagen PNG -->
-              <button id="btn-download-png" type="button" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md">
-                <i data-lucide="download" class="w-4 h-4"></i>
-                Descargar Imagen (PNG HD)
+              <!-- Botón 2: Descargar Imagen A4 (o A5) PNG HD -->
+              <button id="btn-download-image" type="button" class="w-full bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md cursor-pointer">
+                <i data-lucide="image" class="w-4 h-4 flex-shrink-0"></i>
+                <div class="text-left">
+                  <span id="btn-download-image-label" class="block leading-tight font-extrabold">Descargar Imagen (A4 HD)</span>
+                  <span id="btn-download-image-sub" class="text-[10px] text-slate-300 font-normal">Vidriera / Pared (21×29.7 cm)</span>
+                </div>
               </button>
 
               <!-- Copiar Link de Cobro -->
-              <button id="btn-copy-link" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="link-2" class="w-4 h-4"></i>
-                Copiar mi Link de Cobro
+              <button id="btn-copy-link" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <i data-lucide="link-2" class="w-4 h-4 text-slate-600"></i>
+                <span>Copiar mi Link de Cobro</span>
               </button>
 
               <!-- Compartir por WhatsApp -->
-              <button id="btn-share-whatsapp" type="button" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+              <button id="btn-share-whatsapp" type="button" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
                 <i data-lucide="share-2" class="w-4 h-4 text-emerald-600"></i>
-                Compartir por WhatsApp
+                <span>Compartir por WhatsApp</span>
               </button>
             </div>
             
-            <p class="text-[11px] text-slate-400 text-center pt-1">
-              Tip: Al tocar "Imprimir", elegí tamaño A4 o A5 y activá "Gráficos de fondo" en tu navegador.
-            </p>
+            <!-- Dimensiones y datos adecuados -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] text-slate-500 space-y-1">
+              <div class="flex items-center gap-1.5 font-semibold text-slate-700">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span>Guía de formatos para tu comercio:</span>
+              </div>
+              <p>• <strong>Formato A5 (14.8 × 21 cm):</strong> Tamaño exacto para porta-folletos y soportes acrílicos apoyados en el mostrador o caja.</p>
+              <p>• <strong>Formato A4 (21.0 × 29.7 cm):</strong> Hoja completa en alta resolución (300 DPI) para pegar en vidriera, puerta o pared.</p>
+            </div>
           </div>
 
         </div>
