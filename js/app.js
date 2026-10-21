@@ -795,14 +795,6 @@ function renderClientView() {
     }
   }
 
-  // Enlace seguro para editar mis datos
-  const editLink = document.getElementById('client-edit-link');
-  if (editLink) {
-    const editUrl = new URL(window.location.href);
-    editUrl.searchParams.set('edit', '1');
-    editLink.href = editUrl.toString();
-  }
-
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -1544,6 +1536,27 @@ function showClientView() {
 }
 
 /**
+ * Navega hacia el inicio limpio de pasaDatos sin parámetros en la URL (?n=...&a=...)
+ */
+function navigateToCleanHome() {
+  window.location.href = window.location.origin + window.location.pathname;
+}
+
+/**
+ * Vincula los enlaces de la marca y botones para ir al inicio limpio
+ */
+function bindBrandHomeLinks() {
+  const cleanUrl = window.location.origin + window.location.pathname;
+  document.querySelectorAll('.brand-home-clean-link').forEach((link) => {
+    link.href = cleanUrl;
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateToCleanHome();
+    });
+  });
+}
+
+/**
  * Enrutador Inicial de la Aplicación
  */
 function initRouter() {
@@ -1566,6 +1579,7 @@ function initRouter() {
 
   bindInputEvents();
   bindClientEvents();
+  bindBrandHomeLinks();
 
   if (window.lucide) window.lucide.createIcons();
 }
